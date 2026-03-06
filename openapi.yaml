@@ -1,0 +1,1257 @@
+openapi: '3.1.0'
+info:
+  title: Cold Navigator API
+  version: '2026-03-01'
+  description: |
+    Cold Navigator API provides programmatic access to lead management, campaign control,
+    LinkedIn automation, conversations, analytics, webhook management, and API key management.
+
+    ## Authentication
+    All API requests require an API key passed via the `x-api-key` header.
+    Create API keys from your workspace settings at [app.coldnavigator.com/settings](https://app.coldnavigator.com/settings).
+
+    ## Rate Limits
+    Rate limits depend on your subscription plan:
+    | Plan | Per Minute | Per Day |
+    |------|-----------|---------|
+    | Free / Trial | 30 | 1,000 |
+    | Starter | 60 | 5,000 |
+    | Pro | 120 | 20,000 |
+    | Enterprise | 300 | 100,000 |
+
+    Rate limit headers are included in every response:
+    - `X-RateLimit-Limit` — Maximum requests allowed
+    - `X-RateLimit-Remaining` — Remaining requests in window
+    - `X-RateLimit-Reset` — Unix timestamp when the window resets
+
+    ## Base URL
+    - Production: `https://app.coldnavigator.com/api/v1`
+    - Development: `https://dev.coldnavigator.com/api/v1`
+
+servers:
+  - url: https://app.coldnavigator.com/api/v1
+    description: Production
+  - url: https://dev.coldnavigator.com/api/v1
+    description: Development
+
+security:
+  - apiKey: []
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key with appropriate scopes
+
+  schemas:
+    Lead:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        first_name: { type: string }
+        last_name: { type: string }
+        full_name: { type: string }
+        linkedin_url: { type: string, format: uri }
+        email: { type: string, format: email }
+        company: { type: string }
+        title: { type: string }
+        status:
+          type: string
+          enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested]
+        custom_fields: { type: object }
+        tags: { type: array, items: { type: string } }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    Campaign:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status:
+          type: string
+          enum: [draft, active, paused, completed, archived]
+        stats:
+          type: object
+          properties:
+            total_leads: { type: integer }
+            connections_sent: { type: integer }
+            connections_accepted: { type: integer }
+            messages_sent: { type: integer }
+            replies_received: { type: integer }
+            acceptance_rate: { type: number }
+            reply_rate: { type: number }
+        created_at: { type: string, format: date-time }
+        started_at: { type: string, format: date-time, nullable: true }
+        completed_at: { type: string, format: date-time, nullable: true }
+
+    LinkedInAccount:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        linkedin_url: { type: string }
+        status: { type: string }
+        health_score: { type: integer }
+        is_rate_limited: { type: boolean }
+        daily_connection_limit: { type: integer }
+        daily_message_limit: { type: integer }
+        connections_sent_today: { type: integer }
+        messages_sent_today: { type: integer }
+        last_activity_at: { type: string, format: date-time }
+
+    AsyncJob:
+      type: object
+      properties:
+        job_id: { type: string }
+        status:
+          type: string
+          enum: [queued, active, completed, failed]
+        result: { type: object, nullable: true }
+        error: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+
+    Webhook:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        workspace_id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string, format: uri }
+        event_types: { type: array, items: { type: string } }
+        is_active: { type: boolean }
+        description: { type: string, nullable: true }
+        headers: { type: object, nullable: true }
+        last_triggered_at: { type: string, format: date-time, nullable: true }
+        last_success_at: { type: string, format: date-time, nullable: true }
+        last_failure_at: { type: string, format: date-time, nullable: true }
+        failure_count: { type: integer }
+        consecutive_failures: { type: integer }
+        total_deliveries: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    WebhookDelivery:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        webhook_id: { type: string, format: uuid }
+        event_type: { type: string }
+        event_id: { type: string }
+        status:
+          type: string
+          enum: [pending, success, failed, dead_letter]
+        response_status: { type: integer, nullable: true }
+        duration_ms: { type: integer, nullable: true }
+        error_message: { type: string, nullable: true }
+        attempt_number: { type: integer }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+
+    ApiKey:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        key_prefix: { type: string }
+        scopes: { type: array, items: { type: string } }
+        is_active: { type: boolean }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        expires_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    ApiKeyCreated:
+      allOf:
+        - $ref: '#/components/schemas/ApiKey'
+        - type: object
+          properties:
+            key:
+              type: string
+              description: Full API key — only shown once at creation. Store it securely.
+
+    SuccessResponse:
+      type: object
+      properties:
+        data: { type: object }
+        message: { type: string }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message: { type: string }
+            code: { type: string }
+            details: { type: array, items: { type: object } }
+
+    PaginationMeta:
+      type: object
+      properties:
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
+
+  parameters:
+    limitParam:
+      name: limit
+      in: query
+      schema: { type: integer, default: 50, maximum: 100 }
+      description: Maximum number of items to return
+    offsetParam:
+      name: offset
+      in: query
+      schema: { type: integer, default: 0 }
+      description: Number of items to skip
+
+paths:
+  # ============ LEADS ============
+  /public/leads:
+    get:
+      operationId: listLeads
+      summary: List leads
+      description: Returns a paginated list of leads in your workspace with optional filters.
+      tags: [Leads]
+      x-required-scope: read:leads
+      parameters:
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - name: status
+          in: query
+          schema: { type: string }
+          description: Filter by lead status
+        - name: campaign_id
+          in: query
+          schema: { type: string, format: uuid }
+          description: Filter by campaign enrollment
+        - name: tag
+          in: query
+          schema: { type: string }
+          description: Filter by tag
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search by name, email, or company
+        - name: updated_after
+          in: query
+          schema: { type: string, format: date-time }
+          description: Only leads updated after this timestamp
+        - name: sort
+          in: query
+          schema: { type: string, default: created_at }
+        - name: order
+          in: query
+          schema: { type: string, enum: [asc, desc], default: desc }
+      responses:
+        '200':
+          description: Lead list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Lead' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+        '401': { description: Invalid or missing API key }
+        '403': { description: Insufficient scope }
+    post:
+      operationId: createLead
+      summary: Create lead
+      description: Creates a new lead in your workspace.
+      tags: [Leads]
+      x-required-scope: write:leads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                linkedin_url: { type: string, format: uri }
+                email: { type: string, format: email }
+                first_name: { type: string }
+                last_name: { type: string }
+                company: { type: string }
+                title: { type: string }
+                custom_fields: { type: object }
+                lead_group_id: { type: string, format: uuid }
+                tags: { type: array, items: { type: string } }
+              required: [first_name, last_name]
+      responses:
+        '201':
+          description: Lead created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Lead' }
+
+  /public/leads/batch:
+    post:
+      operationId: batchCreateLeads
+      summary: Batch create/update leads
+      description: Create or update up to 100 leads in a single request. Matching is done by linkedin_url or email.
+      tags: [Leads]
+      x-required-scope: write:leads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                leads:
+                  type: array
+                  maxItems: 100
+                  items:
+                    type: object
+                    properties:
+                      linkedin_url: { type: string }
+                      email: { type: string }
+                      first_name: { type: string }
+                      last_name: { type: string }
+                      company: { type: string }
+                      title: { type: string }
+                      custom_fields: { type: object }
+                      lead_group_id: { type: string, format: uuid }
+                      tags: { type: array, items: { type: string } }
+                    required: [first_name, last_name]
+                update_existing: { type: boolean, default: true }
+              required: [leads]
+      responses:
+        '201':
+          description: Batch result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      created: { type: integer }
+                      updated: { type: integer }
+                      skipped: { type: integer }
+                      errors: { type: array }
+
+  /public/leads/{id}:
+    get:
+      operationId: getLead
+      summary: Get lead details
+      description: Returns full lead details including tags, groups, and workflow state.
+      tags: [Leads]
+      x-required-scope: read:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Lead details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Lead' }
+        '404': { description: Lead not found }
+    put:
+      operationId: updateLead
+      summary: Update lead
+      description: Partially update a lead's fields.
+      tags: [Leads]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name: { type: string }
+                last_name: { type: string }
+                company: { type: string }
+                title: { type: string }
+                email: { type: string }
+                custom_fields: { type: object }
+                tags: { type: array, items: { type: string } }
+                status: { type: string }
+      responses:
+        '200':
+          description: Lead updated
+    delete:
+      operationId: deleteLead
+      summary: Delete lead
+      tags: [Leads]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Lead deleted
+
+  /public/leads/{id}/status:
+    patch:
+      operationId: changeLeadStatus
+      summary: Change lead status
+      description: Updates the lead status and returns the old and new values.
+      tags: [Leads]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string }
+              required: [status]
+      responses:
+        '200':
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      old_status: { type: string }
+                      new_status: { type: string }
+
+  /public/leads/{id}/tags:
+    post:
+      operationId: addLeadTags
+      summary: Add tags to lead
+      tags: [Leads]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags: { type: array, items: { type: string } }
+              required: [tags]
+      responses:
+        '200':
+          description: Tags added
+    delete:
+      operationId: removeLeadTags
+      summary: Remove tags from lead
+      tags: [Leads]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tags: { type: array, items: { type: string } }
+              required: [tags]
+      responses:
+        '200':
+          description: Tags removed
+
+  /public/leads/{id}/activity:
+    get:
+      operationId: getLeadActivity
+      summary: Get lead activity history
+      description: Returns workflow actions and messages for this lead.
+      tags: [Leads]
+      x-required-scope: read:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+      responses:
+        '200':
+          description: Activity list
+
+  # ============ CAMPAIGNS ============
+  /public/campaigns:
+    get:
+      operationId: listCampaigns
+      summary: List campaigns
+      description: Returns a list of campaigns with basic stats.
+      tags: [Campaigns]
+      x-required-scope: read:campaigns
+      parameters:
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - name: status
+          in: query
+          schema: { type: string }
+          description: Filter by campaign status
+      responses:
+        '200':
+          description: Campaign list
+
+  /public/campaigns/{id}:
+    get:
+      operationId: getCampaign
+      summary: Get campaign details with stats
+      description: Returns detailed campaign info including performance statistics.
+      tags: [Campaigns]
+      x-required-scope: read:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Campaign' }
+
+  /public/campaigns/{id}/leads:
+    get:
+      operationId: getCampaignLeads
+      summary: List campaign leads with workflow state
+      tags: [Campaigns]
+      x-required-scope: read:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Campaign leads
+
+  /public/campaigns/{id}/enroll:
+    post:
+      operationId: enrollLeads
+      summary: Enroll leads into campaign
+      description: Enroll one or more leads into the campaign workflow.
+      tags: [Campaigns]
+      x-required-scope: write:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+              required: [lead_ids]
+      responses:
+        '200':
+          description: Enrollment result
+
+  /public/campaigns/{id}/unenroll:
+    post:
+      operationId: unenrollLeads
+      summary: Unenroll leads from campaign
+      tags: [Campaigns]
+      x-required-scope: write:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+              required: [lead_ids]
+      responses:
+        '200':
+          description: Unenrollment result
+
+  /public/campaigns/{id}/start:
+    post:
+      operationId: startCampaign
+      summary: Start campaign
+      tags: [Campaigns]
+      x-required-scope: write:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign started
+
+  /public/campaigns/{id}/pause:
+    post:
+      operationId: pauseCampaign
+      summary: Pause campaign
+      tags: [Campaigns]
+      x-required-scope: write:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign paused
+
+  /public/campaigns/{id}/resume:
+    post:
+      operationId: resumeCampaign
+      summary: Resume campaign
+      tags: [Campaigns]
+      x-required-scope: write:campaigns
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign resumed
+
+  # ============ LINKEDIN ACTIONS ============
+  /public/linkedin/send-connection:
+    post:
+      operationId: sendConnection
+      summary: Send LinkedIn connection request
+      description: |
+        Queues a connection request to be sent via the specified LinkedIn account.
+        Returns immediately with a job ID. Use the job status endpoint to check progress.
+      tags: [LinkedIn Actions]
+      x-required-scope: write:linkedin_actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_id: { type: string, format: uuid }
+                linkedin_account_id: { type: string, format: uuid }
+                note: { type: string, maxLength: 300, description: Optional connection note }
+              required: [lead_id, linkedin_account_id]
+      responses:
+        '202':
+          description: Connection request queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AsyncJob' }
+
+  /public/linkedin/send-message:
+    post:
+      operationId: sendMessage
+      summary: Send LinkedIn message
+      description: Queues a direct message to a connected lead.
+      tags: [LinkedIn Actions]
+      x-required-scope: write:linkedin_actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_id: { type: string, format: uuid }
+                linkedin_account_id: { type: string, format: uuid }
+                message: { type: string, minLength: 1, maxLength: 8000 }
+              required: [lead_id, linkedin_account_id, message]
+      responses:
+        '202':
+          description: Message queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AsyncJob' }
+
+  /public/linkedin/send-inmail:
+    post:
+      operationId: sendInMail
+      summary: Send LinkedIn InMail
+      description: Queues an InMail message to a lead (requires Sales Navigator).
+      tags: [LinkedIn Actions]
+      x-required-scope: write:linkedin_actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_id: { type: string, format: uuid }
+                linkedin_account_id: { type: string, format: uuid }
+                subject: { type: string, maxLength: 200 }
+                message: { type: string, minLength: 1, maxLength: 8000 }
+              required: [lead_id, linkedin_account_id, subject, message]
+      responses:
+        '202':
+          description: InMail queued
+
+  /public/linkedin/view-profile:
+    post:
+      operationId: viewProfile
+      summary: View LinkedIn profile
+      description: Queues a profile view action. Useful for warming up leads before connecting.
+      tags: [LinkedIn Actions]
+      x-required-scope: write:linkedin_actions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_id: { type: string, format: uuid }
+                linkedin_account_id: { type: string, format: uuid }
+              required: [lead_id, linkedin_account_id]
+      responses:
+        '202':
+          description: Profile view queued
+
+  /public/linkedin/job/{job_id}:
+    get:
+      operationId: getJobStatus
+      summary: Check async job status
+      description: Returns the current status of an async LinkedIn action job.
+      tags: [LinkedIn Actions]
+      x-required-scope: read:leads
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AsyncJob' }
+
+  # ============ CONVERSATIONS ============
+  /public/conversations:
+    get:
+      operationId: listConversations
+      summary: List conversations
+      tags: [Conversations]
+      x-required-scope: read:conversations
+      parameters:
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - name: linkedin_account_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: has_unread
+          in: query
+          schema: { type: boolean }
+        - name: lead_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Conversation list
+
+  /public/conversations/{id}:
+    get:
+      operationId: getConversation
+      summary: Get conversation with messages
+      tags: [Conversations]
+      x-required-scope: read:conversations
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: message_limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: message_offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Conversation with messages
+
+  # ============ LEAD GROUPS ============
+  /public/lead-groups:
+    get:
+      operationId: listLeadGroups
+      summary: List lead groups
+      tags: [Lead Groups]
+      x-required-scope: read:leads
+      responses:
+        '200':
+          description: Lead group list
+    post:
+      operationId: createLeadGroup
+      summary: Create lead group
+      tags: [Lead Groups]
+      x-required-scope: write:leads
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+              required: [name]
+      responses:
+        '201':
+          description: Lead group created
+
+  /public/lead-groups/{id}/leads:
+    post:
+      operationId: addLeadsToGroup
+      summary: Add leads to group
+      tags: [Lead Groups]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+              required: [lead_ids]
+      responses:
+        '200':
+          description: Leads added
+    delete:
+      operationId: removeLeadsFromGroup
+      summary: Remove leads from group
+      tags: [Lead Groups]
+      x-required-scope: write:leads
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+              required: [lead_ids]
+      responses:
+        '200':
+          description: Leads removed
+
+  # ============ LINKEDIN ACCOUNTS ============
+  /public/linkedin-accounts:
+    get:
+      operationId: listLinkedInAccounts
+      summary: List LinkedIn accounts
+      description: Returns safe fields only. Sensitive data like cookies are never exposed.
+      tags: [LinkedIn Accounts]
+      x-required-scope: read:accounts
+      responses:
+        '200':
+          description: Account list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/LinkedInAccount' }
+
+  /public/linkedin-accounts/{id}:
+    get:
+      operationId: getLinkedInAccount
+      summary: Get LinkedIn account details
+      tags: [LinkedIn Accounts]
+      x-required-scope: read:accounts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Account details
+
+  # ============ ANALYTICS ============
+  /public/analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      summary: Workspace analytics overview
+      description: Returns aggregated analytics for the workspace over a time period.
+      tags: [Analytics]
+      x-required-scope: read:analytics
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string, enum: ['7d', '30d', '90d'], default: '30d' }
+      responses:
+        '200':
+          description: Analytics overview
+
+  /public/analytics/campaigns/{id}:
+    get:
+      operationId: getCampaignAnalytics
+      summary: Campaign analytics
+      tags: [Analytics]
+      x-required-scope: read:analytics
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Campaign analytics
+
+  # ============ WEBHOOK EVENTS ============
+  /public/webhook-events:
+    get:
+      operationId: listWebhookEventTypes
+      summary: List available webhook event types
+      description: Returns all webhook event types grouped by category.
+      tags: [Webhook Events]
+      responses:
+        '200':
+          description: Event types grouped by category
+
+  # ============ WEBHOOK MANAGEMENT ============
+  /webhooks:
+    get:
+      operationId: listWebhooks
+      summary: List webhooks
+      description: List all webhooks for your workspace. Requires owner or admin role.
+      tags: [Webhook Management]
+      responses:
+        '200':
+          description: Webhook list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Webhook' }
+    post:
+      operationId: createWebhook
+      summary: Create webhook
+      description: |
+        Creates a new webhook. A secret key is auto-generated if not provided.
+        The secret key is included in the response — store it securely for signature verification.
+      tags: [Webhook Management]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 100 }
+                url: { type: string, format: uri, maxLength: 2000 }
+                event_types:
+                  type: array
+                  items: { type: string }
+                  minItems: 1
+                secret_key: { type: string, maxLength: 255 }
+                description: { type: string, maxLength: 500 }
+                headers: { type: object }
+              required: [name, url, event_types]
+      responses:
+        '201':
+          description: Webhook created (includes secret_key)
+
+  /webhooks/{id}:
+    get:
+      operationId: getWebhook
+      summary: Get webhook with recent deliveries
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Webhook details with recent deliveries
+    put:
+      operationId: updateWebhook
+      summary: Update webhook
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 100 }
+                url: { type: string, format: uri }
+                event_types: { type: array, items: { type: string } }
+                is_active: { type: boolean }
+                description: { type: string }
+                headers: { type: object }
+      responses:
+        '200':
+          description: Webhook updated
+    delete:
+      operationId: deleteWebhook
+      summary: Delete webhook
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Webhook deleted
+
+  /webhooks/{id}/rotate-secret:
+    patch:
+      operationId: rotateWebhookSecret
+      summary: Rotate webhook secret key
+      description: Generates a new secret key. The old key is immediately invalidated.
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: New secret key
+
+  /webhooks/{id}/test:
+    post:
+      operationId: testWebhook
+      summary: Send test event
+      description: Sends a test payload to the webhook URL synchronously and returns the result.
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type: { type: string, default: 'webhook.test' }
+      responses:
+        '200':
+          description: Test delivery result
+
+  /webhooks/{id}/deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      summary: List webhook deliveries
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, success, failed, dead_letter] }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Delivery list
+
+  /webhooks/{id}/retry:
+    post:
+      operationId: retryWebhookDeliveries
+      summary: Retry failed deliveries
+      tags: [Webhook Management]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                delivery_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+                  description: Specific deliveries to retry. If empty, retries all failed.
+      responses:
+        '200':
+          description: Retry result
+
+  # ============ API KEYS ============
+  /api-keys:
+    get:
+      operationId: listApiKeys
+      summary: List API keys
+      description: Returns all API keys for your workspace (without the key hash).
+      tags: [API Keys]
+      responses:
+        '200':
+          description: API key list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ApiKey' }
+    post:
+      operationId: createApiKey
+      summary: Create API key
+      description: |
+        Creates a new API key. The full key is returned only in this response.
+        **Store it securely — it cannot be retrieved again.**
+      tags: [API Keys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 100 }
+                scopes:
+                  type: array
+                  items: { type: string }
+                  minItems: 1
+                  description: |
+                    Available scopes: read:leads, write:leads, read:campaigns, write:campaigns,
+                    read:conversations, read:accounts, read:analytics, write:linkedin_actions, *
+                expires_at: { type: string, format: date-time }
+              required: [name, scopes]
+      responses:
+        '201':
+          description: API key created (includes full key)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ApiKeyCreated' }
+
+  /api-keys/{id}:
+    put:
+      operationId: updateApiKey
+      summary: Update API key
+      tags: [API Keys]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                scopes: { type: array, items: { type: string } }
+                is_active: { type: boolean }
+      responses:
+        '200':
+          description: API key updated
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke API key
+      description: Permanently deactivates the API key. This action cannot be undone.
+      tags: [API Keys]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: API key revoked

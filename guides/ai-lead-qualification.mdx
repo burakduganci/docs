@@ -1,0 +1,376 @@
+---
+title: "AI Lead Qualification"
+description: "Automatically qualify leads based on their LinkedIn replies using OpenAI and Cold Navigator webhooks. Route interested leads to your team instantly."
+icon: "brain"
+---
+
+# AI-Powered Lead Qualification
+
+Manually reading every LinkedIn reply and deciding the next step does not scale. This guide shows you how to build an automated pipeline that uses OpenAI to classify lead replies and update their status in Cold Navigator — all in real time.
+
+## How It Works
+
+```
+Cold Navigator                Automation Tool             OpenAI              Cold Navigator
+(webhook)                     (Make.com / n8n)            (GPT-4)             (API)
+    |                              |                         |                     |
+    |--- lead.replied event ------>|                         |                     |
+    |                              |--- classify reply ----->|                     |
+    |                              |<-- interested / not ----|                     |
+    |                              |                                               |
+    |                              |--- PATCH /leads/{id}/status ---------------->|
+    |                              |--- POST /leads/{id}/tags ------------------->|
+```
+
+When a lead replies, Cold Navigator sends a webhook event to your automation tool. The automation tool extracts the message, sends it to OpenAI for classification, then calls the Cold Navigator API to update the lead status and add tags based on the AI's assessment.
+
+## Prerequisites
+
+- A Cold Navigator account with an active API key
+- An automation tool account ([Make.com](/guides/make-com), [n8n](/guides/n8n), or [Zapier](/guides/zapier))
+- An OpenAI API key (GPT-4 or GPT-4o recommended)
+
+<Steps>
+  <Step title="Set Up a Webhook for lead.replied Events">
+    Create a webhook in Cold Navigator that only fires on reply events.
+
+    ```bash
+    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "AI Lead Qualification",
+        "url": "YOUR_AUTOMATION_TOOL_WEBHOOK_URL",
+        "events": ["lead.replied"],
+        "active": true
+      }'
+    ```
+
+    See the [Make.com](/guides/make-com), [n8n](/guides/n8n), or [Zapier](/guides/zapier) guide for details on getting your automation tool's webhook URL.
+  </Step>
+
+  <Step title="Extract the Message Content">
+    When a lead replies, Cold Navigator sends a payload like this:
+
+    ```json
+    {
+      "id": "evt_abc123",
+      "event_type": "lead.replied",
+      "timestamp": "2026-03-06T14:30:00Z",
+      "data": {
+        "lead": {
+          "id": "lead_xyz789",
+          "first_name": "Sarah",
+          "last_name": "Johnson",
+          "company": "Acme Corp",
+          "title": "VP of Sales",
+          "linkedin_url": "https://linkedin.com/in/sarahjohnson"
+        },
+        "campaign": {
+          "id": "camp_456",
+          "name": "Q1 Enterprise Outreach"
+        },
+        "message": {
+          "text": "Hi, thanks for reaching out! I'd love to learn more about your product. Can we schedule a call next week?"
+        }
+      }
+    }
+    ```
+
+    In your automation tool, map the following fields for the next step:
+    - **Message text**: `data.message.text`
+    - **Lead name**: `data.lead.first_name` + `data.lead.last_name`
+    - **Lead company**: `data.lead.company`
+    - **Lead title**: `data.lead.title`
+    - **Lead ID**: `data.lead.id` (needed for the API callback)
+  </Step>
+
+  <Step title="Send to OpenAI for Classification">
+    Call the OpenAI Chat Completions API to classify the reply.
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api.openai.com/v1/chat/completions \
+      -H "Authorization: Bearer YOUR_OPENAI_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-4o",
+        "temperature": 0,
+        "response_format": { "type": "json_object" },
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a sales lead qualification assistant. Analyze the LinkedIn reply from a prospect and classify their intent. Respond with JSON only."
+          },
+          {
+            "role": "user",
+            "content": "Classify this LinkedIn reply from {{lead_name}} ({{lead_title}} at {{lead_company}}):\n\n\"{{message_text}}\"\n\nRespond with JSON in this exact format:\n{\n  \"classification\": \"interested\" | \"not_interested\" | \"needs_follow_up\",\n  \"confidence\": 0.0 to 1.0,\n  \"reasoning\": \"Brief explanation\",\n  \"suggested_action\": \"What the sales rep should do next\",\n  \"tags\": [\"array of relevant tags\"]\n}"
+          }
+        ]
+      }'
+    ```
+
+    ```javascript n8n Code Node
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${$env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a sales lead qualification assistant. Analyze the LinkedIn reply from a prospect and classify their intent. Respond with JSON only.'
+          },
+          {
+            role: 'user',
+            content: `Classify this LinkedIn reply from ${$json.data.lead.first_name} ${$json.data.lead.last_name} (${$json.data.lead.title} at ${$json.data.lead.company}):\n\n"${$json.data.message.text}"\n\nRespond with JSON in this exact format:\n{\n  "classification": "interested" | "not_interested" | "needs_follow_up",\n  "confidence": 0.0 to 1.0,\n  "reasoning": "Brief explanation",\n  "suggested_action": "What the sales rep should do next",\n  "tags": ["array of relevant tags"]\n}`
+          }
+        ]
+      })
+    });
+
+    const result = await response.json();
+    const classification = JSON.parse(result.choices[0].message.content);
+
+    return [{ json: { ...classification, lead_id: $json.data.lead.id } }];
+    ```
+    </CodeGroup>
+
+    **Example OpenAI Response:**
+
+    ```json
+    {
+      "classification": "interested",
+      "confidence": 0.92,
+      "reasoning": "The prospect explicitly expressed interest in learning more and proactively suggested scheduling a call, indicating strong buying intent.",
+      "suggested_action": "Respond within 24 hours with calendar link to book the call.",
+      "tags": ["high-intent", "meeting-ready", "decision-maker"]
+    }
+    ```
+  </Step>
+
+  <Step title="Update Lead Status in Cold Navigator">
+    Based on the AI classification, update the lead's status using the Cold Navigator API.
+
+    Map the classification to a lead status:
+
+    | AI Classification | Lead Status | Description |
+    |------------------|-------------|-------------|
+    | `interested` | `qualified` | Lead expressed clear interest |
+    | `not_interested` | `not_interested` | Lead declined or showed no interest |
+    | `needs_follow_up` | `follow_up` | Ambiguous reply, needs human review |
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X PATCH https://app.coldnavigator.com/api/v1/public/leads/LEAD_ID/status \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "status": "qualified"
+      }'
+    ```
+
+    ```javascript n8n Code Node
+    const classification = $json.classification;
+
+    const statusMap = {
+      'interested': 'qualified',
+      'not_interested': 'not_interested',
+      'needs_follow_up': 'follow_up'
+    };
+
+    const response = await fetch(
+      `https://app.coldnavigator.com/api/v1/public/leads/${$json.lead_id}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'x-api-key': $env.COLD_NAVIGATOR_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: statusMap[classification]
+        })
+      }
+    );
+
+    return [{ json: await response.json() }];
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add Tags Based on AI Classification">
+    Add AI-generated tags to the lead for filtering and reporting.
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://app.coldnavigator.com/api/v1/public/leads/LEAD_ID/tags \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "tags": ["ai-qualified", "high-intent", "meeting-ready"]
+      }'
+    ```
+
+    ```javascript n8n Code Node
+    const tags = [
+      `ai-${$json.classification}`,
+      ...$json.tags
+    ];
+
+    const response = await fetch(
+      `https://app.coldnavigator.com/api/v1/public/leads/${$json.lead_id}/tags`,
+      {
+        method: 'POST',
+        headers: {
+          'x-api-key': $env.COLD_NAVIGATOR_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tags })
+      }
+    );
+
+    return [{ json: await response.json() }];
+    ```
+    </CodeGroup>
+
+    <Tip>
+      Prefix AI-generated tags with `ai-` (e.g., `ai-interested`, `ai-not_interested`) so you can easily distinguish them from manually applied tags in Cold Navigator.
+    </Tip>
+  </Step>
+</Steps>
+
+## Complete Workflow Architecture
+
+Here is the full workflow for each automation tool:
+
+<CodeGroup>
+```text Make.com
+Webhook Trigger (Cold Navigator lead.replied)
+    → HTTP Module (OpenAI Chat Completions API)
+    → JSON Parse (extract classification)
+    → Router
+        → Route 1 (interested): HTTP → PATCH lead status to "qualified"
+                                 HTTP → POST tags ["ai-interested", ...]
+                                 Slack → Notify #sales-hot-leads
+        → Route 2 (not_interested): HTTP → PATCH lead status to "not_interested"
+                                     HTTP → POST tags ["ai-not_interested"]
+        → Route 3 (needs_follow_up): HTTP → PATCH lead status to "follow_up"
+                                      HTTP → POST tags ["ai-follow_up"]
+                                      Slack → Notify #sales-review
+```
+
+```text n8n
+Webhook Node (Cold Navigator lead.replied)
+    → Code Node (call OpenAI, parse response)
+    → Switch Node (classification)
+        → interested: HTTP Request → PATCH lead status
+                      HTTP Request → POST tags
+                      Slack → Notify channel
+        → not_interested: HTTP Request → PATCH lead status
+                          HTTP Request → POST tags
+        → needs_follow_up: HTTP Request → PATCH lead status
+                           HTTP Request → POST tags
+                           Slack → Flag for review
+```
+
+```text Zapier
+Webhooks by Zapier (Catch Hook)
+    → Code by Zapier (call OpenAI API)
+    → Paths by Zapier
+        → Path A (interested): Webhooks (PATCH status)
+                                Webhooks (POST tags)
+                                Slack (send message)
+        → Path B (not_interested): Webhooks (PATCH status)
+                                    Webhooks (POST tags)
+        → Path C (needs_follow_up): Webhooks (PATCH status)
+                                     Webhooks (POST tags)
+                                     Slack (flag for review)
+```
+</CodeGroup>
+
+## The OpenAI Prompt
+
+Here is the full system prompt we recommend. Customize the criteria to match your ideal customer profile.
+
+```text
+You are a sales lead qualification assistant for a B2B SaaS company.
+
+Analyze the LinkedIn reply from a prospect and classify their buying intent.
+
+CLASSIFICATION RULES:
+- "interested": The prospect shows clear interest, asks questions about the product,
+  requests a demo/call, or wants to learn more. Any positive engagement.
+- "not_interested": The prospect explicitly declines, says they are not the right
+  person, asks to be removed, or gives a clearly negative response.
+- "needs_follow_up": The reply is ambiguous, asks a question that needs a human
+  answer, mentions timing issues ("not right now"), or references another person
+  who might be interested.
+
+CONTEXT:
+- We sell [YOUR PRODUCT DESCRIPTION]
+- Our ideal customers are [YOUR ICP]
+- Common positive signals: asking about pricing, features, integrations, team size
+- Common negative signals: "not interested", "please remove me", "wrong person"
+
+Respond with JSON only in this exact format:
+{
+  "classification": "interested" | "not_interested" | "needs_follow_up",
+  "confidence": 0.0 to 1.0,
+  "reasoning": "Brief explanation of why this classification was chosen",
+  "suggested_action": "Specific next step for the sales rep",
+  "tags": ["relevant", "tags", "for", "this", "lead"]
+}
+```
+
+<Note>
+  Customize the `CONTEXT` section with your product description and ideal customer profile. The more specific you are, the better the AI classification will be.
+</Note>
+
+## Example Classifications
+
+Here are sample replies and how the AI would classify them:
+
+| Reply | Classification | Confidence |
+|-------|---------------|------------|
+| "Sounds interesting! Can we schedule a call next week?" | `interested` | 0.95 |
+| "Thanks, but we just signed with a competitor." | `not_interested` | 0.90 |
+| "I'm not the right person, but try reaching out to our CTO." | `needs_follow_up` | 0.85 |
+| "Can you send me more info about pricing?" | `interested` | 0.88 |
+| "Not looking for this right now, maybe next quarter." | `needs_follow_up` | 0.80 |
+| "Please don't contact me again." | `not_interested` | 0.98 |
+
+## Cost Estimation
+
+| Component | Cost |
+|-----------|------|
+| OpenAI GPT-4o | ~$0.003 per reply classification (avg 200 input + 100 output tokens) |
+| Cold Navigator API | Included in your plan |
+| Make.com / n8n / Zapier | Depends on plan and volume |
+
+For a campaign with 1,000 leads and a 15% reply rate, expect approximately 150 AI classifications at roughly $0.45 total OpenAI cost.
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Set a Confidence Threshold" icon="gauge">
+    Only auto-update lead status when confidence is above 0.8. Route low-confidence classifications to human review.
+  </Card>
+  <Card title="Log Everything" icon="list-check">
+    Store the AI reasoning and suggested action as notes on the lead for your sales team to reference.
+  </Card>
+  <Card title="Review Regularly" icon="magnifying-glass">
+    Periodically review AI classifications against actual outcomes to tune your prompt and catch misclassifications.
+  </Card>
+  <Card title="Handle Edge Cases" icon="shield">
+    Add error handling for empty messages, non-English replies, and OpenAI API failures. Default to `needs_follow_up` on errors.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Start with a small campaign to validate the AI classifications before rolling out to all campaigns. Compare AI results against your team's manual qualification to measure accuracy.
+</Tip>

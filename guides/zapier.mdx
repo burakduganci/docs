@@ -1,0 +1,230 @@
+---
+title: "Zapier Integration"
+description: "Connect Cold Navigator to 6,000+ apps using Zapier. Automate lead workflows with webhook triggers and popular CRM, email, and messaging actions."
+icon: "bolt"
+---
+
+# Zapier Integration
+
+Zapier connects Cold Navigator to over 6,000 apps without writing code. Use Cold Navigator webhooks as triggers in Zapier to automatically sync leads to your CRM, send notifications, and build end-to-end sales workflows.
+
+## Prerequisites
+
+- A Cold Navigator account with an active API key
+- A Zapier account (free tier works for basic Zaps)
+
+<Steps>
+  <Step title="Create a Zap with a Webhook Trigger">
+    In Zapier, click **Create Zap** and set up the trigger.
+
+    1. Search for **Webhooks by Zapier** as the trigger app
+    2. Select **Catch Hook** as the trigger event
+    3. Click **Continue**
+    4. Zapier will skip the "Pick off a Child Key" step — click **Continue** again
+    5. Zapier will generate a unique webhook URL like:
+       ```
+       https://hooks.zapier.com/hooks/catch/123456/abcdef/
+       ```
+    6. Copy this URL
+
+    <Note>
+      Do not close this tab. Zapier needs to stay on the "Test trigger" step to receive the sample event from Cold Navigator.
+    </Note>
+  </Step>
+
+  <Step title="Create a Webhook in Cold Navigator">
+    In Cold Navigator, go to **Settings > Webhooks** and click **Create Webhook**.
+
+    1. **Name**: `Zapier Integration`
+    2. **URL**: Paste the Zapier webhook URL
+    3. **Events**: Select the events you want to trigger Zaps (e.g., `lead.connected`, `lead.replied`)
+    4. Click **Create**
+
+    You can also use the API:
+
+    ```bash
+    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Zapier Integration",
+        "url": "https://hooks.zapier.com/hooks/catch/123456/abcdef/",
+        "events": ["lead.connected", "lead.replied"],
+        "active": true
+      }'
+    ```
+  </Step>
+
+  <Step title="Test to Receive Sample Data">
+    In Cold Navigator, click the **Test** button next to your webhook. This sends a sample event payload to Zapier.
+
+    Go back to Zapier and click **Test trigger**. You should see the sample data appear with all the fields from the Cold Navigator payload.
+
+    Zapier will parse the JSON and make each field available as a variable in subsequent steps.
+
+    <Tip>
+      If Zapier does not detect the test event, click "Test trigger" again. Sometimes there is a brief delay between sending and receiving.
+    </Tip>
+  </Step>
+
+  <Step title="Filter by Event Type">
+    Since Cold Navigator may send multiple event types to the same webhook URL, add a **Filter** step to process only the events you care about.
+
+    1. Click **+** to add an action
+    2. Search for **Filter by Zapier**
+    3. Set the condition:
+       - **Field**: `event_type`
+       - **Condition**: `(Text) Exactly matches`
+       - **Value**: `lead.connected`
+    4. Click **Continue**
+
+    Only events matching `lead.connected` will pass through to the next step. For multiple event types, create separate Zaps or use **Paths by Zapier** to handle each type differently.
+  </Step>
+
+  <Step title="Add Actions">
+    Now add the actions you want to perform when the event fires.
+
+    **Popular actions:**
+
+    <CardGroup cols={2}>
+      <Card title="HubSpot CRM" icon="hubspot">
+        Create or update contacts when leads connect or reply.
+      </Card>
+      <Card title="Google Sheets" icon="table">
+        Log lead activities to a spreadsheet for team reporting.
+      </Card>
+      <Card title="Slack" icon="hashtag">
+        Post notifications to a sales channel when leads engage.
+      </Card>
+      <Card title="Gmail / Email" icon="envelope">
+        Send follow-up emails or internal notifications automatically.
+      </Card>
+    </CardGroup>
+  </Step>
+
+  <Step title="Example: lead.connected to HubSpot CRM + Welcome Email">
+    Here is a complete Zap that creates a HubSpot contact and sends a welcome email when a lead accepts your LinkedIn connection request.
+
+    **Step 1 — Trigger:** Webhooks by Zapier (Catch Hook)
+
+    **Step 2 — Filter:** `event_type` exactly matches `lead.connected`
+
+    **Step 3 — HubSpot: Create Contact**
+
+    Map the fields from the webhook payload:
+
+    | HubSpot Field | Cold Navigator Value |
+    |---------------|---------------------|
+    | Email | `data.lead.email` |
+    | First Name | `data.lead.first_name` |
+    | Last Name | `data.lead.last_name` |
+    | Company | `data.lead.company` |
+    | Job Title | `data.lead.title` |
+    | LinkedIn URL | `data.lead.linkedin_url` |
+    | Lead Source | `LinkedIn - Cold Navigator` (static text) |
+
+    **Step 4 — Gmail: Send Email**
+
+    - **To**: `{{data.lead.email}}`
+    - **Subject**: `Great to connect, {{data.lead.first_name}}!`
+    - **Body**:
+
+    ```
+    Hi {{data.lead.first_name}},
+
+    Thanks for connecting on LinkedIn! I wanted to follow up and share
+    a few resources that might be relevant given your role as
+    {{data.lead.title}} at {{data.lead.company}}.
+
+    Would you be open to a quick 15-minute call this week?
+
+    Best regards,
+    [Your Name]
+    ```
+
+    <Note>
+      The email step requires that the lead has an email address in Cold Navigator. If `data.lead.email` is empty, add a Filter step to skip leads without emails.
+    </Note>
+  </Step>
+</Steps>
+
+## Sample Webhook Payload
+
+Here is what Zapier receives when a lead connects:
+
+```json
+{
+  "id": "evt_def456",
+  "event_type": "lead.connected",
+  "timestamp": "2026-03-06T10:15:00Z",
+  "data": {
+    "lead": {
+      "id": "lead_abc123",
+      "first_name": "Michael",
+      "last_name": "Chen",
+      "email": "michael.chen@acme.com",
+      "company": "Acme Corp",
+      "title": "Director of Engineering",
+      "linkedin_url": "https://linkedin.com/in/michaelchen"
+    },
+    "campaign": {
+      "id": "camp_789",
+      "name": "Engineering Leaders Outreach"
+    },
+    "linkedin_account": {
+      "id": "la_001",
+      "name": "John Smith"
+    }
+  }
+}
+```
+
+## Using Paths for Multiple Event Types
+
+If you want one Zap to handle multiple event types, use **Paths by Zapier** instead of Filter:
+
+```
+Webhook Trigger (Catch Hook)
+        |
+   Paths by Zapier
+    /         \
+  Path A       Path B
+  (lead.replied)  (lead.connected)
+    |              |
+  Slack msg     HubSpot contact
+  + Sheet row   + Welcome email
+```
+
+1. Add **Paths by Zapier** after the webhook trigger
+2. **Path A** rule: `event_type` exactly matches `lead.replied`
+3. **Path B** rule: `event_type` exactly matches `lead.connected`
+4. Add different actions under each path
+
+## Advanced: Call Cold Navigator API from Zapier
+
+Use **Webhooks by Zapier (POST/PUT)** as an action step to call the Cold Navigator API:
+
+```
+Method: PATCH
+URL: https://app.coldnavigator.com/api/v1/public/leads/{{data.lead.id}}/status
+Headers:
+  x-api-key: YOUR_API_KEY
+  Content-Type: application/json
+Body:
+  {"status": "qualified"}
+```
+
+This lets you update lead statuses, add tags, or enroll leads into new campaigns directly from Zapier.
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Zapier does not receive test event | Make sure you are on the "Test trigger" step and clicked "Test trigger" after sending from Cold Navigator |
+| Wrong fields appear in mapping | Re-test the trigger to refresh the sample data structure |
+| Zap runs but action fails | Check the Zap history for error details. Common issues: missing required fields, expired auth tokens |
+| Too many Zap runs | Use Filters to limit which events trigger actions. Review your webhook event subscriptions in Cold Navigator |
+
+<Note>
+  Zapier's free plan allows 100 tasks per month with single-step Zaps. Multi-step Zaps and higher volumes require a paid plan.
+</Note>

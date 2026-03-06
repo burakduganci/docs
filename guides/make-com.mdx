@@ -1,0 +1,176 @@
+---
+title: "Make.com Integration"
+description: "Connect Cold Navigator to 1,000+ apps using Make.com (formerly Integromat). Route webhook events to Google Sheets, CRMs, Slack, and more."
+icon: "wand-magic-sparkles"
+---
+
+# Make.com Integration
+
+Make.com (formerly Integromat) lets you connect Cold Navigator to thousands of apps with a visual drag-and-drop builder. Use webhooks to trigger automated scenarios whenever leads reply, connect, or move through your campaigns.
+
+## Prerequisites
+
+- A Cold Navigator account with an active API key
+- A Make.com account (free tier works for testing)
+
+<Steps>
+  <Step title="Create a Custom Webhook in Make.com">
+    Log in to Make.com and create a new scenario.
+
+    1. Click the **+** button to add a module
+    2. Search for **Webhooks** and select **Custom webhook**
+    3. Click **Add** to create a new webhook
+    4. Give it a name like `Cold Navigator Events`
+    5. Click **Save**
+
+    Make.com will generate a unique webhook URL. Copy this URL — you will need it in the next step.
+
+    <Note>
+      Do not close this tab. Make.com needs to stay in "listening" mode to receive the test event.
+    </Note>
+  </Step>
+
+  <Step title="Create a Webhook in Cold Navigator">
+    In Cold Navigator, navigate to **Settings > Webhooks** and click **Create Webhook**.
+
+    1. **Name**: `Make.com Integration`
+    2. **URL**: Paste the Make.com webhook URL you copied
+    3. **Events**: Select the events you want to receive (e.g., `lead.replied`, `lead.connected`, `campaign.completed`)
+    4. Click **Create**
+
+    You can also create the webhook via the API:
+
+    ```bash
+    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "Make.com Integration",
+        "url": "https://hook.us1.make.com/YOUR_WEBHOOK_ID",
+        "events": ["lead.replied", "lead.connected"],
+        "active": true
+      }'
+    ```
+  </Step>
+
+  <Step title="Test the Connection">
+    In Cold Navigator, find your webhook in the list and click the **Test** button. This sends a sample event to Make.com.
+
+    Switch back to Make.com — you should see the test payload appear with a green checkmark. Make.com will automatically parse the JSON structure for you to use in subsequent modules.
+
+    <Tip>
+      If you do not see the test event, verify that your Make.com scenario is still in "listening" mode and that the webhook URL is correct.
+    </Tip>
+  </Step>
+
+  <Step title="Build Your Scenario">
+    Now that the webhook trigger is set up, add modules to process the events.
+
+    **Recommended pattern:** Use a **Router** module after the webhook to handle different event types separately.
+
+    ```
+    Webhook Trigger
+        |
+      Router
+       / \
+      /   \
+    lead.replied    lead.connected
+        |                |
+    Slack Message    Google Sheets Row
+    ```
+
+    1. Click the **+** after the webhook module
+    2. Add a **Router** module
+    3. For each route, set a filter based on the `event_type` field:
+       - Route 1 filter: `event_type` equals `lead.replied`
+       - Route 2 filter: `event_type` equals `lead.connected`
+    4. Add action modules to each route
+  </Step>
+
+  <Step title="Example: Slack Notification + Google Sheets on Lead Reply">
+    Here is a complete scenario that sends a Slack notification and logs the reply in Google Sheets when a lead replies.
+
+    **Route 1 — Slack Notification:**
+
+    1. Add a **Slack > Create a Message** module
+    2. Select your Slack workspace and channel (e.g., `#sales-notifications`)
+    3. Set the message text:
+
+    ```
+    New reply from {{data.lead.first_name}} {{data.lead.last_name}}
+    Company: {{data.lead.company}}
+    Campaign: {{data.campaign.name}}
+    Message: {{data.message.text}}
+    ```
+
+    **Route 2 — Google Sheets:**
+
+    1. Add a **Google Sheets > Add a Row** module
+    2. Select your spreadsheet and sheet
+    3. Map columns:
+       - **Lead Name**: `{{data.lead.first_name}} {{data.lead.last_name}}`
+       - **Company**: `{{data.lead.company}}`
+       - **Reply**: `{{data.message.text}}`
+       - **Date**: `{{timestamp}}`
+       - **Campaign**: `{{data.campaign.name}}`
+  </Step>
+</Steps>
+
+## Sample Webhook Payload
+
+Here is what Cold Navigator sends when a lead replies:
+
+```json
+{
+  "id": "evt_abc123",
+  "event_type": "lead.replied",
+  "timestamp": "2026-03-06T14:30:00Z",
+  "data": {
+    "lead": {
+      "id": "lead_xyz789",
+      "first_name": "Sarah",
+      "last_name": "Johnson",
+      "company": "Acme Corp",
+      "title": "VP of Sales",
+      "linkedin_url": "https://linkedin.com/in/sarahjohnson"
+    },
+    "campaign": {
+      "id": "camp_456",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "message": {
+      "text": "Hi, thanks for reaching out! I'd love to learn more about your product."
+    }
+  }
+}
+```
+
+## Common Use Cases
+
+<CardGroup cols={2}>
+  <Card title="CRM Sync" icon="database">
+    When a lead connects or replies, create or update a contact in HubSpot, Salesforce, or Pipedrive.
+  </Card>
+  <Card title="Slack Alerts" icon="bell">
+    Get instant Slack notifications when leads reply, so your team can follow up quickly.
+  </Card>
+  <Card title="Google Sheets Log" icon="table">
+    Log all lead activities to a shared Google Sheet for reporting and team visibility.
+  </Card>
+  <Card title="Email Follow-up" icon="envelope">
+    Trigger a follow-up email via Gmail or SendGrid when a lead connects on LinkedIn.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Make.com does not receive events | Verify the webhook URL is correct and the scenario is active (not paused) |
+| Scenario runs but actions fail | Check module configurations and authentication for connected apps |
+| Duplicate events | Enable Make.com's built-in deduplication or add an `id` filter |
+| Events are delayed | Check Cold Navigator's webhook delivery log in **Settings > Webhooks > Deliveries** |
+
+<Note>
+  Make.com's free plan allows 1,000 operations per month. For high-volume outreach, consider upgrading to a paid plan.
+</Note>

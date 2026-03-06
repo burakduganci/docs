@@ -1,0 +1,234 @@
+---
+title: "n8n Integration"
+description: "Connect Cold Navigator to n8n for self-hosted workflow automation. Route webhook events with full control over data, security, and hosting."
+icon: "diagram-project"
+---
+
+# n8n Integration
+
+n8n is an open-source workflow automation tool that you can self-host or use as a cloud service. It gives you full control over your data and integrations. This guide shows how to connect Cold Navigator webhooks to n8n workflows.
+
+## Prerequisites
+
+- A Cold Navigator account with an active API key
+- An n8n instance (self-hosted or n8n Cloud)
+
+<Steps>
+  <Step title="Create a Webhook Node in n8n">
+    Open your n8n editor and create a new workflow.
+
+    1. Click **Add first step** (or the **+** button)
+    2. Search for **Webhook** and select it
+    3. Configure the node:
+       - **HTTP Method**: `POST`
+       - **Path**: Choose a path like `cold-navigator` (n8n will generate the full URL)
+    4. Click **Listen for Test Event** to put n8n in listening mode
+
+    n8n will show two URLs:
+    - **Test URL**: For development (only works when the editor is open)
+    - **Production URL**: For live use (works when the workflow is active)
+
+    Copy the **Production URL** for the next step.
+
+    <Note>
+      Use the Test URL during setup to verify payloads. Switch to the Production URL before activating your workflow.
+    </Note>
+  </Step>
+
+  <Step title="Create a Webhook in Cold Navigator">
+    In Cold Navigator, go to **Settings > Webhooks** and click **Create Webhook**.
+
+    1. **Name**: `n8n Workflow`
+    2. **URL**: Paste the n8n webhook URL (use the Test URL first for testing)
+    3. **Events**: Select the events you want (e.g., `lead.replied`, `lead.connected`, `campaign.completed`)
+    4. **Secret**: Note the webhook secret — you will use it for signature verification
+    5. Click **Create**
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "name": "n8n Workflow",
+        "url": "https://your-n8n.example.com/webhook/cold-navigator",
+        "events": ["lead.replied", "lead.connected", "campaign.completed"],
+        "active": true
+      }'
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Test the Connection">
+    In Cold Navigator, click the **Test** button next to your webhook. Switch back to n8n — you should see the test payload appear in the Webhook node.
+
+    Click **Save test data** to store the sample payload. This allows n8n to show field mappings in downstream nodes.
+  </Step>
+
+  <Step title="(Optional) Enable HMAC Signature Verification">
+    For production use, verify that webhook requests genuinely come from Cold Navigator by validating the `X-Webhook-Signature` header.
+
+    Add a **Header Auth** credential in n8n:
+
+    1. In the Webhook node, go to **Authentication** and select **Header Auth**
+    2. Click **Create New Credential**
+    3. Set:
+       - **Header Name**: `X-Webhook-Signature`
+       - **Header Value**: Your webhook secret from Cold Navigator
+
+    Alternatively, use a **Code** node after the webhook to verify the HMAC-SHA256 signature programmatically:
+
+    ```javascript
+    const crypto = require('crypto');
+
+    const secret = 'YOUR_WEBHOOK_SECRET';
+    const signature = $input.first().headers['x-webhook-signature'];
+    const body = JSON.stringify($input.first().json);
+
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body)
+      .digest('hex');
+
+    if (signature !== `sha256=${expectedSignature}`) {
+      throw new Error('Invalid webhook signature');
+    }
+
+    return $input.all();
+    ```
+
+    <Tip>
+      HMAC verification is strongly recommended for production deployments. It prevents attackers from sending fake events to your n8n webhook URL.
+    </Tip>
+  </Step>
+
+  <Step title="Route Events with an IF Node">
+    Use an **IF** node to route different event types to different actions.
+
+    1. Add an **IF** node after the Webhook
+    2. Set the condition: `{{ $json.event_type }}` equals `lead.replied`
+    3. **True** branch: Handle reply events (e.g., update CRM)
+    4. **False** branch: Add another IF or handle other events
+
+    For multiple event types, use a **Switch** node instead:
+
+    ```
+    Webhook
+       |
+     Switch (event_type)
+      /    |    \
+    lead.  lead.  campaign.
+    replied connected completed
+      |      |        |
+    CRM    Slack    Email
+    Update  Alert   Summary
+    ```
+  </Step>
+
+  <Step title="Example: CRM Update on Reply, Email Summary on Campaign Complete">
+    **Branch 1 — Update CRM on lead.replied:**
+
+    1. Add an **HTTP Request** node
+    2. Configure it to update your CRM:
+       - **Method**: `PATCH`
+       - **URL**: `https://api.hubspot.com/crm/v3/objects/contacts/{{$json.data.lead.id}}`
+       - **Body**: Map lead data and reply content
+
+    **Branch 2 — Email summary on campaign.completed:**
+
+    1. Add a **Send Email** node (Gmail, SMTP, or any email service)
+    2. Configure:
+       - **To**: `sales-team@yourcompany.com`
+       - **Subject**: `Campaign "{{$json.data.campaign.name}}" completed`
+       - **Body**:
+
+    ```
+    Campaign "{{$json.data.campaign.name}}" has completed.
+
+    Results:
+    - Total leads: {{$json.data.stats.total_leads}}
+    - Replies: {{$json.data.stats.replies}}
+    - Connections: {{$json.data.stats.connections}}
+
+    View full results at https://app.coldnavigator.com/campaigns/{{$json.data.campaign.id}}
+    ```
+  </Step>
+</Steps>
+
+## Sample Webhook Payload
+
+Here is what Cold Navigator sends when a lead replies:
+
+```json
+{
+  "id": "evt_abc123",
+  "event_type": "lead.replied",
+  "timestamp": "2026-03-06T14:30:00Z",
+  "data": {
+    "lead": {
+      "id": "lead_xyz789",
+      "first_name": "Sarah",
+      "last_name": "Johnson",
+      "company": "Acme Corp",
+      "title": "VP of Sales",
+      "linkedin_url": "https://linkedin.com/in/sarahjohnson"
+    },
+    "campaign": {
+      "id": "camp_456",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "message": {
+      "text": "Hi, thanks for reaching out! I'd love to learn more about your product."
+    }
+  }
+}
+```
+
+## n8n Nodes Commonly Used with Cold Navigator
+
+<CardGroup cols={2}>
+  <Card title="HTTP Request" icon="globe">
+    Call the Cold Navigator API to update lead statuses, add tags, or enroll leads in new campaigns.
+  </Card>
+  <Card title="IF / Switch" icon="code-branch">
+    Route events based on event_type, lead properties, or campaign data.
+  </Card>
+  <Card title="Code" icon="code">
+    Run custom JavaScript to transform data, validate signatures, or apply business logic.
+  </Card>
+  <Card title="Wait" icon="clock">
+    Add delays between actions — for example, wait 10 minutes before sending a follow-up notification.
+  </Card>
+</CardGroup>
+
+## Calling Cold Navigator API from n8n
+
+You can use **HTTP Request** nodes to call Cold Navigator API endpoints. For example, to update a lead status:
+
+```javascript
+// HTTP Request node configuration
+// Method: PATCH
+// URL: https://app.coldnavigator.com/api/v1/public/leads/{{$json.data.lead.id}}/status
+
+// Headers:
+// x-api-key: YOUR_API_KEY
+// Content-Type: application/json
+
+// Body:
+{
+  "status": "qualified"
+}
+```
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| n8n does not receive events | Make sure the workflow is **active** (toggled on) and you are using the Production URL |
+| Test URL works but Production does not | Activate the workflow — Production URLs only work when the workflow is active |
+| Signature verification fails | Verify that the secret matches exactly and the body is not modified before hashing |
+| Events arrive out of order | Add a **Sort** node or use timestamps to handle ordering in your workflow |
+
+<Note>
+  If you are self-hosting n8n, make sure your server is publicly accessible (or use a tunnel like ngrok for testing) so Cold Navigator can deliver webhook events.
+</Note>

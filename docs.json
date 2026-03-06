@@ -1,68 +1,266 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Cold Navigator API",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#0F172A",
+    "light": "#3B82F6",
+    "dark": "#1E40AF"
   },
   "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Dashboard",
+        "href": "https://app.coldnavigator.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get API Key",
+      "href": "https://app.coldnavigator.com/settings?tab=api-keys"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Getting Started",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Introduction",
             "pages": [
               "index",
               "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "authentication"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Leads",
             "pages": [
-              "api-reference/introduction"
+              {
+                "openapi": "GET /public/leads"
+              },
+              {
+                "openapi": "POST /public/leads"
+              },
+              {
+                "openapi": "POST /public/leads/batch"
+              },
+              {
+                "openapi": "GET /public/leads/{id}"
+              },
+              {
+                "openapi": "PUT /public/leads/{id}"
+              },
+              {
+                "openapi": "DELETE /public/leads/{id}"
+              },
+              {
+                "openapi": "PATCH /public/leads/{id}/status"
+              },
+              {
+                "openapi": "POST /public/leads/{id}/tags"
+              },
+              {
+                "openapi": "DELETE /public/leads/{id}/tags"
+              },
+              {
+                "openapi": "GET /public/leads/{id}/activity"
+              }
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Campaigns",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              {
+                "openapi": "GET /public/campaigns"
+              },
+              {
+                "openapi": "GET /public/campaigns/{id}"
+              },
+              {
+                "openapi": "GET /public/campaigns/{id}/leads"
+              },
+              {
+                "openapi": "POST /public/campaigns/{id}/enroll"
+              },
+              {
+                "openapi": "POST /public/campaigns/{id}/unenroll"
+              },
+              {
+                "openapi": "POST /public/campaigns/{id}/start"
+              },
+              {
+                "openapi": "POST /public/campaigns/{id}/pause"
+              },
+              {
+                "openapi": "POST /public/campaigns/{id}/resume"
+              }
+            ]
+          },
+          {
+            "group": "LinkedIn Actions",
+            "pages": [
+              {
+                "openapi": "POST /public/linkedin/send-connection"
+              },
+              {
+                "openapi": "POST /public/linkedin/send-message"
+              },
+              {
+                "openapi": "POST /public/linkedin/send-inmail"
+              },
+              {
+                "openapi": "POST /public/linkedin/view-profile"
+              },
+              {
+                "openapi": "GET /public/linkedin/job/{job_id}"
+              }
+            ]
+          },
+          {
+            "group": "Conversations",
+            "pages": [
+              {
+                "openapi": "GET /public/conversations"
+              },
+              {
+                "openapi": "GET /public/conversations/{id}"
+              }
+            ]
+          },
+          {
+            "group": "Lead Groups",
+            "pages": [
+              {
+                "openapi": "GET /public/lead-groups"
+              },
+              {
+                "openapi": "POST /public/lead-groups"
+              },
+              {
+                "openapi": "POST /public/lead-groups/{id}/leads"
+              },
+              {
+                "openapi": "DELETE /public/lead-groups/{id}/leads"
+              }
+            ]
+          },
+          {
+            "group": "LinkedIn Accounts",
+            "pages": [
+              {
+                "openapi": "GET /public/linkedin-accounts"
+              },
+              {
+                "openapi": "GET /public/linkedin-accounts/{id}"
+              }
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              {
+                "openapi": "GET /public/analytics/overview"
+              },
+              {
+                "openapi": "GET /public/analytics/campaigns/{id}"
+              }
+            ]
+          },
+          {
+            "group": "Webhook Events",
+            "pages": [
+              {
+                "openapi": "GET /public/webhook-events"
+              }
+            ]
+          },
+          {
+            "group": "Webhook Management",
+            "pages": [
+              {
+                "openapi": "GET /webhooks"
+              },
+              {
+                "openapi": "POST /webhooks"
+              },
+              {
+                "openapi": "GET /webhooks/{id}"
+              },
+              {
+                "openapi": "PUT /webhooks/{id}"
+              },
+              {
+                "openapi": "DELETE /webhooks/{id}"
+              },
+              {
+                "openapi": "PATCH /webhooks/{id}/rotate-secret"
+              },
+              {
+                "openapi": "POST /webhooks/{id}/test"
+              },
+              {
+                "openapi": "GET /webhooks/{id}/deliveries"
+              },
+              {
+                "openapi": "POST /webhooks/{id}/retry"
+              }
+            ]
+          },
+          {
+            "group": "API Keys",
+            "pages": [
+              {
+                "openapi": "GET /api-keys"
+              },
+              {
+                "openapi": "POST /api-keys"
+              },
+              {
+                "openapi": "PUT /api-keys/{id}"
+              },
+              {
+                "openapi": "DELETE /api-keys/{id}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Webhooks",
+        "groups": [
+          {
+            "group": "Webhooks Guide",
+            "pages": [
+              "webhooks/overview",
+              "webhooks/event-types",
+              "webhooks/payload-format",
+              "webhooks/signature-verification",
+              "webhooks/retry-policy"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Integration Guides",
+            "pages": [
+              "guides/make-com",
+              "guides/n8n",
+              "guides/zapier",
+              "guides/ai-lead-qualification"
             ]
           }
         ]
@@ -71,52 +269,32 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Dashboard",
+          "href": "https://app.coldnavigator.com",
+          "icon": "gauge"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "API Keys",
+          "href": "https://app.coldnavigator.com/settings?tab=api-keys",
+          "icon": "key"
         }
       ]
     }
   },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+  "openapi": "openapi.yaml",
+  "api": {
+    "auth": {
+      "method": "key",
+      "name": "x-api-key"
+    },
+    "playground": {
+      "mode": "simple"
     }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "website": "https://coldnavigator.com",
+      "linkedin": "https://linkedin.com/company/cold-navigator"
     }
   }
 }

@@ -1,0 +1,157 @@
+---
+title: "Webhooks Overview"
+description: "Receive real-time HTTP notifications when events happen in your Cold Navigator workspace."
+icon: "webhook"
+---
+
+# Webhooks
+
+Webhooks let your application receive real-time notifications when events happen in Cold Navigator. Instead of polling the API to check for changes, Cold Navigator sends an HTTP POST request to your endpoint whenever a lead replies, a connection is accepted, a campaign completes, or any other tracked event occurs.
+
+## How webhooks work
+
+<Steps>
+  <Step title="Create a webhook">
+    Register a webhook endpoint through the [dashboard](https://app.coldnavigator.com/settings/webhooks) or the [API](/api-reference/webhooks/create-webhook). Provide a URL and select which events you want to receive.
+  </Step>
+  <Step title="Select events">
+    Choose from 18 event types across leads, campaigns, messages, connections, workflows, and accounts. Subscribe only to the events you need.
+  </Step>
+  <Step title="Receive HTTP POST requests">
+    When a subscribed event occurs, Cold Navigator sends a JSON payload to your endpoint via HTTP POST. Your server should respond with a `2xx` status code within 15 seconds.
+  </Step>
+  <Step title="Verify the signature">
+    Each delivery includes an `X-Webhook-Signature` header. Use your webhook secret to [verify the signature](/webhooks/signature-verification) and confirm the request came from Cold Navigator.
+  </Step>
+</Steps>
+
+## Webhook lifecycle
+
+```
+Event occurs in Cold Navigator
+        |
+        v
+  Build JSON payload
+        |
+        v
+  Sign with HMAC-SHA256
+        |
+        v
+  POST to your endpoint
+        |
+        v
+  2xx response? -----> Done
+        |
+       No
+        v
+  Retry (up to 5 attempts)
+        |
+        v
+  All retries failed? --> Auto-disable webhook
+```
+
+<Note>
+  Cold Navigator waits up to **15 seconds** for your endpoint to respond. If your processing takes longer, return a `202 Accepted` immediately and handle the event asynchronously.
+</Note>
+
+## Setting up a webhook
+
+### Via the dashboard
+
+1. Go to **Settings > Webhooks** in your Cold Navigator dashboard
+2. Click **Create Webhook**
+3. Enter your endpoint URL (must be HTTPS in production)
+4. Select the events you want to subscribe to
+5. Copy the signing secret and store it securely
+6. Click **Save**
+
+### Via the API
+
+```bash
+curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
+  -H "x-api-key: your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-app.com/webhooks/cold-navigator",
+    "events": ["lead.replied", "connection.accepted", "campaign.completed"],
+    "description": "Production webhook"
+  }'
+```
+
+The response includes your signing secret:
+
+```json
+{
+  "data": {
+    "id": "wh_abc123",
+    "url": "https://your-app.com/webhooks/cold-navigator",
+    "events": ["lead.replied", "connection.accepted", "campaign.completed"],
+    "secret": "whsec_your_signing_secret_here",
+    "active": true,
+    "created_at": "2026-03-06T10:00:00Z"
+  }
+}
+```
+
+<Warning>
+  The signing secret is only shown once when the webhook is created. Store it immediately. If you lose it, use the [rotate secret](/api-reference/webhooks/rotate-secret) endpoint to generate a new one.
+</Warning>
+
+## Testing your webhook
+
+Before going live, you can send a test delivery to verify your endpoint works:
+
+```bash
+curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/test \
+  -H "x-api-key: your_api_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "lead.replied"
+  }'
+```
+
+This sends a sample payload with realistic test data to your endpoint.
+
+## Integration platform compatibility
+
+Cold Navigator webhooks work out of the box with popular automation platforms:
+
+<CardGroup cols={3}>
+  <Card title="Make.com" icon="gear" href="/guides/make-com">
+    Use a **Custom Webhook** trigger module. Paste your Make webhook URL as the endpoint.
+  </Card>
+  <Card title="n8n" icon="code-branch" href="/guides/n8n">
+    Use a **Webhook** trigger node. Cold Navigator delivers standard JSON payloads that n8n parses automatically.
+  </Card>
+  <Card title="Zapier" icon="bolt" href="/guides/zapier">
+    Use **Webhooks by Zapier** with the "Catch Hook" trigger. Map payload fields to downstream actions.
+  </Card>
+</CardGroup>
+
+<Note>
+  Any platform or service that can receive HTTP POST requests with JSON bodies will work with Cold Navigator webhooks. No special adapter or plugin is required.
+</Note>
+
+## Requirements for your endpoint
+
+- **HTTPS** is required for production webhooks (HTTP is allowed for `localhost` during development)
+- Must respond with a **2xx status code** within **15 seconds**
+- Must accept **POST** requests with `Content-Type: application/json`
+- Should be **idempotent** -- the same event may be delivered more than once in rare cases. Use the `event_id` field to deduplicate.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Event Types" icon="list" href="/webhooks/event-types">
+    Browse all 18 event types with example payloads.
+  </Card>
+  <Card title="Payload Format" icon="code" href="/webhooks/payload-format">
+    Understand the standard payload structure and HTTP headers.
+  </Card>
+  <Card title="Signature Verification" icon="shield-check" href="/webhooks/signature-verification">
+    Secure your endpoint by verifying webhook signatures.
+  </Card>
+  <Card title="Retry Policy" icon="rotate" href="/webhooks/retry-policy">
+    Learn how failed deliveries are retried and what happens when your endpoint is down.
+  </Card>
+</CardGroup>

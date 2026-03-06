@@ -1,0 +1,261 @@
+---
+title: "Signature Verification"
+description: "Verify webhook signatures using HMAC-SHA256 to ensure payloads are authentic and untampered."
+icon: "shield-check"
+---
+
+# Signature Verification
+
+Every webhook delivery from Cold Navigator includes a cryptographic signature in the `X-Webhook-Signature` header. You should verify this signature to confirm that:
+
+1. The request was sent by Cold Navigator (not a third party)
+2. The payload was not modified in transit
+
+<Warning>
+  Skipping signature verification leaves your endpoint vulnerable to spoofed requests. Always verify signatures in production.
+</Warning>
+
+## How it works
+
+Cold Navigator signs each webhook payload using **HMAC-SHA256** with your webhook's signing secret. The signature is computed over a combination of the timestamp and the raw request body to prevent both tampering and replay attacks.
+
+### Verification algorithm
+
+```
+1. Extract the timestamp from the X-Webhook-Timestamp header
+2. Extract the signature from the X-Webhook-Signature header (strip the "sha256=" prefix)
+3. Construct the signed content: "${timestamp}.${rawBody}"
+4. Compute HMAC-SHA256 of the signed content using your webhook secret
+5. Compare the computed signature with the received signature (timing-safe comparison)
+6. Reject if the timestamp is more than 5 minutes old (replay protection)
+```
+
+### Signature format
+
+The `X-Webhook-Signature` header value always has the format:
+
+```
+sha256=<hex_digest>
+```
+
+For example:
+
+```
+sha256=5a1e2f3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f
+```
+
+## Code examples
+
+<CodeGroup>
+```javascript Node.js
+import crypto from 'crypto';
+
+function verifyWebhookSignature(rawBody, timestamp, signature, secret) {
+  // 1. Check timestamp tolerance (5 minutes)
+  const currentTime = Math.floor(Date.now() / 1000);
+  const webhookTime = parseInt(timestamp, 10);
+
+  if (Math.abs(currentTime - webhookTime) > 300) {
+    console.error('Webhook timestamp too old or too far in the future');
+    return false;
+  }
+
+  // 2. Strip the "sha256=" prefix
+  const receivedSig = signature.replace('sha256=', '');
+
+  // 3. Compute expected signature
+  const signedContent = `${timestamp}.${rawBody}`;
+  const expectedSig = crypto
+    .createHmac('sha256', secret)
+    .update(signedContent, 'utf8')
+    .digest('hex');
+
+  // 4. Timing-safe comparison
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(receivedSig, 'hex'),
+      Buffer.from(expectedSig, 'hex')
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Express middleware example
+function webhookSignatureMiddleware(secret) {
+  return (req, res, next) => {
+    const signature = req.headers['x-webhook-signature'];
+    const timestamp = req.headers['x-webhook-timestamp'];
+    const rawBody = req.body.toString();
+
+    if (!signature || !timestamp) {
+      return res.status(401).json({ error: 'Missing signature headers' });
+    }
+
+    if (!verifyWebhookSignature(rawBody, timestamp, signature, secret)) {
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+
+    next();
+  };
+}
+
+// Usage with Express (use express.raw to get the raw body)
+app.post(
+  '/webhooks/cold-navigator',
+  express.raw({ type: 'application/json' }),
+  webhookSignatureMiddleware(process.env.WEBHOOK_SECRET),
+  (req, res) => {
+    const event = JSON.parse(req.body.toString());
+    // Process the verified event...
+    res.status(200).json({ received: true });
+  }
+);
+```
+
+```python Python
+import hmac
+import hashlib
+import time
+
+def verify_webhook_signature(raw_body: str, timestamp: str, signature: str, secret: str) -> bool:
+    # 1. Check timestamp tolerance (5 minutes)
+    current_time = int(time.time())
+    webhook_time = int(timestamp)
+
+    if abs(current_time - webhook_time) > 300:
+        print("Webhook timestamp too old or too far in the future")
+        return False
+
+    # 2. Strip the "sha256=" prefix
+    received_sig = signature.removeprefix("sha256=")
+
+    # 3. Compute expected signature
+    signed_content = f"{timestamp}.{raw_body}"
+    expected_sig = hmac.new(
+        secret.encode("utf-8"),
+        signed_content.encode("utf-8"),
+        hashlib.sha256
+    ).hexdigest()
+
+    # 4. Timing-safe comparison
+    return hmac.compare_digest(received_sig, expected_sig)
+
+
+# Flask example
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+WEBHOOK_SECRET = os.environ["WEBHOOK_SECRET"]
+
+@app.route("/webhooks/cold-navigator", methods=["POST"])
+def handle_webhook():
+    signature = request.headers.get("X-Webhook-Signature", "")
+    timestamp = request.headers.get("X-Webhook-Timestamp", "")
+    raw_body = request.get_data(as_text=True)
+
+    if not verify_webhook_signature(raw_body, timestamp, signature, WEBHOOK_SECRET):
+        return jsonify({"error": "Invalid signature"}), 401
+
+    event = request.get_json()
+    # Process the verified event...
+    return jsonify({"received": True}), 200
+```
+
+```php PHP
+<?php
+
+function verifyWebhookSignature(
+    string $rawBody,
+    string $timestamp,
+    string $signature,
+    string $secret
+): bool {
+    // 1. Check timestamp tolerance (5 minutes)
+    $currentTime = time();
+    $webhookTime = intval($timestamp);
+
+    if (abs($currentTime - $webhookTime) > 300) {
+        error_log("Webhook timestamp too old or too far in the future");
+        return false;
+    }
+
+    // 2. Strip the "sha256=" prefix
+    $receivedSig = str_replace('sha256=', '', $signature);
+
+    // 3. Compute expected signature
+    $signedContent = "{$timestamp}.{$rawBody}";
+    $expectedSig = hash_hmac('sha256', $signedContent, $secret);
+
+    // 4. Timing-safe comparison
+    return hash_equals($expectedSig, $receivedSig);
+}
+
+// Usage example
+$rawBody = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_WEBHOOK_SIGNATURE'] ?? '';
+$timestamp = $_SERVER['HTTP_X_WEBHOOK_TIMESTAMP'] ?? '';
+$secret = getenv('WEBHOOK_SECRET');
+
+if (!verifyWebhookSignature($rawBody, $timestamp, $signature, $secret)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Invalid signature']);
+    exit;
+}
+
+$event = json_decode($rawBody, true);
+// Process the verified event...
+http_response_code(200);
+echo json_encode(['received' => true]);
+```
+</CodeGroup>
+
+## Timestamp tolerance
+
+The `X-Webhook-Timestamp` header contains the Unix timestamp (in seconds) of when the delivery was initiated. You should reject any webhook where the timestamp is more than **5 minutes** from the current time. This protects against replay attacks where an attacker captures a valid webhook delivery and resends it later.
+
+```
+|---------- 5 min ----------|-- NOW --|---------- 5 min ----------|
+        REJECT                 ACCEPT                REJECT
+```
+
+<Note>
+  Make sure your server's clock is synchronized using NTP. A significant clock skew will cause valid webhooks to be rejected.
+</Note>
+
+## Important considerations
+
+### Use the raw request body
+
+The signature is computed over the **raw** request body string, not a parsed-and-re-serialized version. If your framework automatically parses JSON, you need to access the original raw body for verification.
+
+| Framework | How to get the raw body |
+|-----------|------------------------|
+| Express (Node.js) | Use `express.raw({ type: 'application/json' })` middleware |
+| Flask (Python) | Use `request.get_data(as_text=True)` |
+| Django (Python) | Use `request.body.decode('utf-8')` |
+| Laravel (PHP) | Use `file_get_contents('php://input')` |
+| Go (net/http) | Use `io.ReadAll(r.Body)` |
+
+### Use timing-safe comparison
+
+Always use a constant-time comparison function to compare signatures. Standard string comparison (`===`, `==`) is vulnerable to timing attacks that can leak the expected signature byte by byte.
+
+| Language | Function |
+|----------|----------|
+| Node.js | `crypto.timingSafeEqual()` |
+| Python | `hmac.compare_digest()` |
+| PHP | `hash_equals()` |
+| Go | `hmac.Equal()` |
+| Ruby | `Rack::Utils.secure_compare()` |
+
+### Rotating your webhook secret
+
+If your signing secret is compromised, rotate it immediately using the [rotate secret](/api-reference/webhooks/rotate-secret) endpoint:
+
+```bash
+curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/rotate-secret \
+  -H "x-api-key: your_api_key"
+```
+
+After rotation, update your server with the new secret. There is no grace period -- the old secret becomes invalid immediately.

@@ -1,0 +1,346 @@
+---
+title: "Event Types"
+description: "Complete reference of all 18 webhook event types with example payloads for each category."
+icon: "list"
+---
+
+# Event Types
+
+Cold Navigator supports 18 webhook event types organized into 6 categories. When creating or updating a webhook, specify event types using the dot-notation names listed below.
+
+<Note>
+  You can subscribe to individual events or use a wildcard to receive all events in a category. For example, `lead.*` subscribes to all lead events.
+</Note>
+
+## Summary
+
+| Category | Event Type | Description |
+|----------|-----------|-------------|
+| **Lead** | `lead.created` | A new lead was added to the workspace |
+| | `lead.updated` | A lead's fields were modified |
+| | `lead.status_changed` | A lead's status changed (e.g., new, contacted, qualified) |
+| | `lead.replied` | A lead sent a reply message |
+| | `lead.connected` | A lead accepted a connection request |
+| **Campaign** | `campaign.started` | A campaign began executing |
+| | `campaign.completed` | A campaign finished processing all enrolled leads |
+| | `campaign.paused` | A campaign was paused (manually or by system) |
+| | `campaign.error` | A campaign encountered an error and stopped |
+| **Message** | `message.sent` | An outbound message was delivered to a lead |
+| | `message.received` | An inbound message was received from a lead |
+| **Connection** | `connection.sent` | A connection request was sent to a lead |
+| | `connection.accepted` | A lead accepted the connection request |
+| **Workflow** | `workflow.step_completed` | A lead completed a step in the campaign workflow |
+| | `workflow.lead_finished` | A lead finished the entire workflow (all steps done) |
+| **Account** | `account.disconnected` | A LinkedIn account lost its session |
+| | `account.rate_limited` | A LinkedIn account hit rate limits |
+
+---
+
+## Lead Events
+
+Events triggered when leads are created, modified, or interact with your outreach.
+
+### lead.created
+
+Fired when a new lead is added to your workspace, whether through the UI, API, CSV import, or Sales Navigator import.
+
+### lead.updated
+
+Fired when a lead's profile fields are modified (name, company, title, custom fields, tags, etc.).
+
+### lead.status_changed
+
+Fired when a lead's pipeline status changes. The payload includes both the previous and new status values.
+
+### lead.replied
+
+Fired when a lead sends a reply message on LinkedIn. This is typically the highest-value event for sales teams.
+
+### lead.connected
+
+Fired when a lead accepts your LinkedIn connection request.
+
+<Accordion title="Example lead event payload">
+```json
+{
+  "event_id": "evt_ld_01JNQV8X3KZWY9MPGH2T4B6R5D",
+  "event_type": "lead.replied",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T14:23:17.482Z",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "title": "VP of Engineering",
+      "company": "Acme Corp",
+      "status": "replied",
+      "previous_status": "contacted",
+      "tags": ["enterprise", "inbound-interest"]
+    },
+    "campaign": {
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "message": {
+      "id": "msg_01JNQV8X3KZWY9MPGH2T4B6R5E",
+      "text": "Hi, thanks for reaching out. I'd be happy to schedule a call next week.",
+      "received_at": "2026-03-06T14:23:15.000Z"
+    },
+    "linkedin_account": {
+      "id": "la_abc123",
+      "name": "John Sales"
+    }
+  }
+}
+```
+</Accordion>
+
+---
+
+## Campaign Events
+
+Events triggered by campaign lifecycle changes.
+
+### campaign.started
+
+Fired when a campaign transitions to the active state and begins processing leads.
+
+### campaign.completed
+
+Fired when all enrolled leads in a campaign have finished their workflow or been unenrolled. Includes final campaign statistics.
+
+### campaign.paused
+
+Fired when a campaign is paused, either manually by a user or automatically by the system (e.g., due to account issues).
+
+### campaign.error
+
+Fired when a campaign encounters a critical error and cannot continue executing. Includes the error reason.
+
+<Accordion title="Example campaign event payload">
+```json
+{
+  "event_id": "evt_cp_01JNQW2M7RPNT5FXGH8K9D3V6A",
+  "event_type": "campaign.completed",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T18:45:02.119Z",
+  "data": {
+    "campaign": {
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+      "name": "Q1 Enterprise Outreach",
+      "status": "completed",
+      "started_at": "2026-02-15T09:00:00.000Z",
+      "completed_at": "2026-03-06T18:45:00.000Z"
+    },
+    "stats": {
+      "total_leads": 250,
+      "completed": 243,
+      "replied": 38,
+      "connected": 67,
+      "unenrolled": 7,
+      "errored": 0
+    }
+  }
+}
+```
+</Accordion>
+
+---
+
+## Message Events
+
+Events triggered when messages are sent or received through LinkedIn.
+
+### message.sent
+
+Fired when an outbound message (regular message or InMail) is successfully delivered to a lead on LinkedIn.
+
+### message.received
+
+Fired when an inbound message is received from any LinkedIn connection. This differs from `lead.replied` which only fires for leads enrolled in campaigns.
+
+<Accordion title="Example message event payload">
+```json
+{
+  "event_id": "evt_ms_01JNQX6P2DKVY4ANWJ7T8F9H3B",
+  "event_type": "message.sent",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T09:12:33.741Z",
+  "data": {
+    "message": {
+      "id": "msg_01JNQX6P2DKVY4ANWJ7T8F9H3C",
+      "type": "regular",
+      "text": "Hi Sarah, I noticed your work on distributed systems at Acme. Would love to connect and share how we're helping engineering teams...",
+      "sent_at": "2026-03-06T09:12:31.000Z"
+    },
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen"
+    },
+    "campaign": {
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "workflow_step": {
+      "order": 2,
+      "type": "send_message"
+    },
+    "linkedin_account": {
+      "id": "la_abc123",
+      "name": "John Sales"
+    }
+  }
+}
+```
+</Accordion>
+
+---
+
+## Connection Events
+
+Events triggered by LinkedIn connection request activity.
+
+### connection.sent
+
+Fired when a connection request is sent to a lead on LinkedIn, with or without a note.
+
+### connection.accepted
+
+Fired when a lead accepts your connection request. This is the same underlying event as `lead.connected` but categorized separately for granular subscriptions.
+
+<Accordion title="Example connection event payload">
+```json
+{
+  "event_id": "evt_cn_01JNQY9R5GMPW8BXKL2T6D4J7F",
+  "event_type": "connection.accepted",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T11:30:45.893Z",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "title": "VP of Engineering",
+      "company": "Acme Corp"
+    },
+    "connection_request": {
+      "sent_at": "2026-03-04T08:15:00.000Z",
+      "accepted_at": "2026-03-06T11:30:42.000Z",
+      "had_note": true
+    },
+    "campaign": {
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "linkedin_account": {
+      "id": "la_abc123",
+      "name": "John Sales"
+    }
+  }
+}
+```
+</Accordion>
+
+---
+
+## Workflow Events
+
+Events triggered as leads progress through campaign workflow steps.
+
+### workflow.step_completed
+
+Fired each time a lead completes a step in the campaign workflow (e.g., connection request sent, wait period finished, message delivered).
+
+### workflow.lead_finished
+
+Fired when a lead has completed all steps in the workflow and exits the campaign.
+
+<Accordion title="Example workflow event payload">
+```json
+{
+  "event_id": "evt_wf_01JNQZ3T8KNRX2CYLM5V7G9P4H",
+  "event_type": "workflow.step_completed",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T16:05:22.317Z",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen"
+    },
+    "campaign": {
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+      "name": "Q1 Enterprise Outreach"
+    },
+    "workflow_step": {
+      "order": 3,
+      "type": "send_message",
+      "label": "Follow-up message"
+    },
+    "workflow_progress": {
+      "completed_steps": 3,
+      "total_steps": 5,
+      "next_step": {
+        "order": 4,
+        "type": "wait",
+        "config": { "days": 3 }
+      }
+    }
+  }
+}
+```
+</Accordion>
+
+---
+
+## Account Events
+
+Events triggered by LinkedIn account status changes. These are critical for maintaining healthy automation.
+
+### account.disconnected
+
+Fired when a LinkedIn account session becomes invalid. This typically means the account needs to be re-authenticated. **You should pause campaigns using this account when you receive this event.**
+
+### account.rate_limited
+
+Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator automatically throttles the account, but this event lets you track rate limit occurrences.
+
+<Accordion title="Example account event payload">
+```json
+{
+  "event_id": "evt_ac_01JNR04V9LPTM3DZNQ6W8H2K5J",
+  "event_type": "account.disconnected",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T03:17:44.651Z",
+  "data": {
+    "linkedin_account": {
+      "id": "la_abc123",
+      "name": "John Sales",
+      "linkedin_url": "https://www.linkedin.com/in/johnsales",
+      "status": "disconnected",
+      "previous_status": "connected",
+      "disconnected_at": "2026-03-06T03:17:40.000Z"
+    },
+    "affected_campaigns": [
+      {
+        "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+        "name": "Q1 Enterprise Outreach",
+        "status": "paused",
+        "pending_leads": 142
+      }
+    ],
+    "action_required": "Re-authenticate the LinkedIn account in Settings > LinkedIn Accounts."
+  }
+}
+```
+</Accordion>
+
+<Warning>
+  Account events should trigger alerts in your system. A disconnected account means all associated campaigns will stop processing leads until the account is reconnected.
+</Warning>

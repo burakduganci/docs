@@ -1,0 +1,157 @@
+---
+title: "Payload Format"
+description: "Standard webhook payload structure, HTTP headers, and delivery metadata included with every webhook request."
+icon: "code"
+---
+
+# Payload Format
+
+Every webhook delivery from Cold Navigator follows a consistent structure. This page documents the standard payload envelope, HTTP headers, and metadata included with each request.
+
+## Payload structure
+
+All webhook payloads use the same top-level envelope:
+
+```json
+{
+  "event_id": "evt_ld_01JNQV8X3KZWY9MPGH2T4B6R5D",
+  "event_type": "lead.replied",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "timestamp": "2026-03-06T14:23:17.482Z",
+  "data": {
+    // Event-specific data — varies by event type
+  }
+}
+```
+
+### Envelope fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `event_id` | `string` | Unique identifier for this event. Use this to deduplicate deliveries. Format: `evt_{category}_{ulid}`. |
+| `event_type` | `string` | The event type in dot notation (e.g., `lead.replied`, `campaign.completed`). See [Event Types](/webhooks/event-types) for the full list. |
+| `workspace_id` | `string` | UUID of the workspace where the event occurred. |
+| `timestamp` | `string` | ISO 8601 timestamp of when the event occurred (UTC). |
+| `data` | `object` | Event-specific payload. Structure varies by event type. See [Event Types](/webhooks/event-types) for examples. |
+
+<Note>
+  The `event_id` is globally unique and stable across retries. If the same event is delivered multiple times (due to retries), it will always have the same `event_id`. Use this field for idempotency.
+</Note>
+
+## HTTP headers
+
+Every webhook delivery includes the following HTTP headers:
+
+```http
+POST /your/webhook/endpoint HTTP/1.1
+Host: your-app.com
+Content-Type: application/json; charset=utf-8
+User-Agent: ColdNavigator-Webhook/1.0
+X-Webhook-ID: wh_abc123
+X-Webhook-Event: lead.replied
+X-Webhook-Timestamp: 1741270997
+X-Webhook-Delivery: dlv_01JNQV8X3KZWY9MPGH2T4B6R5F
+X-Webhook-Signature: sha256=a1b2c3d4e5f6...
+```
+
+### Header reference
+
+| Header | Description |
+|--------|-------------|
+| `Content-Type` | Always `application/json; charset=utf-8`. |
+| `User-Agent` | Always `ColdNavigator-Webhook/1.0`. Use this to identify Cold Navigator requests in your server logs. |
+| `X-Webhook-ID` | The ID of the webhook configuration that triggered this delivery. |
+| `X-Webhook-Event` | The event type (same as `event_type` in the payload body). Useful for routing without parsing the body. |
+| `X-Webhook-Timestamp` | Unix timestamp (seconds) of when the delivery was initiated. Used for [signature verification](/webhooks/signature-verification) and replay protection. |
+| `X-Webhook-Delivery` | Unique ID for this specific delivery attempt. Different from `event_id` -- the same event retried will have the same `event_id` but a different `X-Webhook-Delivery`. |
+| `X-Webhook-Signature` | HMAC-SHA256 signature of the payload. Format: `sha256=<hex_digest>`. See [Signature Verification](/webhooks/signature-verification). |
+
+## Request details
+
+- **Method**: `POST`
+- **Content encoding**: UTF-8
+- **Timeout**: Cold Navigator waits up to **15 seconds** for a response
+- **Expected response**: Any `2xx` status code is treated as a successful delivery
+- **Body size**: Payloads are typically under 4 KB. The maximum payload size is 64 KB.
+
+## Handling deliveries
+
+### Responding correctly
+
+Your endpoint must return a `2xx` status code to acknowledge receipt:
+
+| Status Code | Meaning |
+|------------|---------|
+| `200 OK` | Delivery acknowledged and processed |
+| `201 Created` | Delivery acknowledged (resource was created) |
+| `202 Accepted` | Delivery acknowledged, will be processed asynchronously |
+| `204 No Content` | Delivery acknowledged, no response body needed |
+
+Any non-`2xx` response (including `3xx` redirects) is treated as a failure and will trigger a [retry](/webhooks/retry-policy).
+
+<Warning>
+  Do not return `301` or `302` redirects. Cold Navigator does not follow redirects and will treat them as delivery failures.
+</Warning>
+
+### Recommended handling pattern
+
+<CodeGroup>
+```javascript Node.js (Express)
+app.post('/webhooks/cold-navigator', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-webhook-signature'];
+  const timestamp = req.headers['x-webhook-timestamp'];
+  const body = req.body.toString();
+
+  // 1. Verify the signature
+  if (!verifySignature(body, timestamp, signature, WEBHOOK_SECRET)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const event = JSON.parse(body);
+
+  // 2. Check for duplicate delivery
+  if (await isEventProcessed(event.event_id)) {
+    return res.status(200).json({ status: 'already_processed' });
+  }
+
+  // 3. Acknowledge immediately
+  res.status(202).json({ status: 'accepted' });
+
+  // 4. Process asynchronously
+  processWebhookEvent(event).catch(err => {
+    console.error('Webhook processing error:', err);
+  });
+});
+```
+
+```python Python (Flask)
+@app.route('/webhooks/cold-navigator', methods=['POST'])
+def handle_webhook():
+    signature = request.headers.get('X-Webhook-Signature')
+    timestamp = request.headers.get('X-Webhook-Timestamp')
+    body = request.get_data(as_text=True)
+
+    # 1. Verify the signature
+    if not verify_signature(body, timestamp, signature, WEBHOOK_SECRET):
+        return jsonify({'error': 'Invalid signature'}), 401
+
+    event = request.get_json()
+
+    # 2. Check for duplicate delivery
+    if is_event_processed(event['event_id']):
+        return jsonify({'status': 'already_processed'}), 200
+
+    # 3. Queue for async processing
+    process_webhook_event.delay(event)
+
+    return jsonify({'status': 'accepted'}), 202
+```
+</CodeGroup>
+
+### Best practices
+
+- **Respond quickly**: Return a `2xx` response within a few seconds. Offload heavy processing to a background job queue.
+- **Be idempotent**: Use `event_id` to deduplicate. The same event may be delivered more than once.
+- **Verify signatures**: Always verify the `X-Webhook-Signature` header before trusting the payload. See [Signature Verification](/webhooks/signature-verification).
+- **Store raw payloads**: Log the raw JSON body for debugging. This is invaluable when troubleshooting integration issues.
+- **Handle unknown events gracefully**: If you receive an event type you do not recognize, return `200` and ignore it. New event types may be added in the future.

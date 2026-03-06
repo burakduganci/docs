@@ -1,0 +1,236 @@
+---
+title: "Authentication"
+description: "Learn how to authenticate with the Cold Navigator API using API keys, manage scopes, and handle rate limits."
+icon: "key"
+---
+
+# Authentication
+
+The Cold Navigator API uses API keys to authenticate requests. Every request must include a valid API key in the `x-api-key` header.
+
+## Creating an API key
+
+1. Log in to [Cold Navigator](https://app.coldnavigator.com)
+2. Go to **Settings > API Keys**
+3. Click **Create API Key**
+4. Enter a descriptive name (e.g., "CRM Sync", "Analytics Dashboard")
+5. Select the scopes your integration needs
+6. Click **Create**
+
+<Warning>
+  Your API key is displayed only once at creation time. Copy it immediately and store it in a secure location such as a secrets manager or environment variable. If you lose it, you will need to create a new key.
+</Warning>
+
+## Using your API key
+
+Include the API key in the `x-api-key` header with every request:
+
+<CodeGroup>
+  ```bash cURL
+  curl -X GET https://app.coldnavigator.com/api/v1/public/leads \
+    -H "x-api-key: cn_live_a1b2c3d4e5f6..."
+  ```
+
+  ```javascript JavaScript
+  const response = await fetch("https://app.coldnavigator.com/api/v1/public/leads", {
+    headers: {
+      "x-api-key": "cn_live_a1b2c3d4e5f6..."
+    }
+  });
+  ```
+</CodeGroup>
+
+<Note>
+  Always use HTTPS. Requests over plain HTTP will be rejected.
+</Note>
+
+## Scopes
+
+API keys are scoped to limit what actions they can perform. Assign only the scopes your integration needs — this follows the principle of least privilege.
+
+| Scope | Description |
+|-------|-------------|
+| `read:leads` | List and retrieve lead details |
+| `write:leads` | Create, update, and delete leads |
+| `read:campaigns` | List and retrieve campaign details |
+| `write:campaigns` | Create, update, start, and pause campaigns |
+| `read:conversations` | Read LinkedIn conversation threads and messages |
+| `read:accounts` | List connected LinkedIn accounts and their status |
+| `read:analytics` | Access campaign and account-level analytics |
+| `write:linkedin_actions` | Trigger LinkedIn actions (connection requests, messages, InMails) |
+| `*` | Full access to all endpoints (use with caution) |
+
+<Warning>
+  The `*` (wildcard) scope grants unrestricted access. Only use it for trusted, internal integrations. For third-party or client-facing integrations, always use the narrowest scopes possible.
+</Warning>
+
+If a request requires a scope that the API key does not have, the API returns a `403 Forbidden` error:
+
+```json
+{
+  "error": {
+    "message": "Insufficient scope. Required: write:leads",
+    "code": "INSUFFICIENT_SCOPE"
+  }
+}
+```
+
+## Rate limits
+
+Rate limits vary by plan. Limits are applied per API key.
+
+| Plan | Requests per minute | Requests per day |
+|------|--------------------:|-----------------:|
+| Free / Trial | 30 | 1,000 |
+| Starter | 60 | 5,000 |
+| Pro | 120 | 20,000 |
+| Enterprise | 300 | 100,000 |
+
+### Rate limit headers
+
+Every response includes headers that tell you your current rate limit status:
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp (seconds) when the current window resets |
+
+Example response headers:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 42
+X-RateLimit-Reset: 1741267200
+```
+
+### Handling rate limits
+
+When you exceed the rate limit, the API returns a `429 Too Many Requests` response:
+
+```json
+{
+  "error": {
+    "message": "Rate limit exceeded. Please retry after 2026-03-06T10:40:00Z.",
+    "code": "RATE_LIMIT_EXCEEDED"
+  }
+}
+```
+
+Best practices for handling rate limits:
+
+- Check `X-RateLimit-Remaining` before making requests
+- Use the `X-RateLimit-Reset` header to schedule retries
+- Implement exponential backoff when you receive a `429` response
+- Cache responses when possible to reduce the number of API calls
+
+## Error codes
+
+The API uses standard HTTP status codes. Here are the authentication and authorization errors you may encounter:
+
+| Status | Code | Description |
+|--------|------|-------------|
+| `401 Unauthorized` | `INVALID_API_KEY` | The API key is missing, invalid, or has been revoked. |
+| `403 Forbidden` | `INSUFFICIENT_SCOPE` | The API key does not have the required scope for this endpoint. |
+| `429 Too Many Requests` | `RATE_LIMIT_EXCEEDED` | You have exceeded your plan's rate limit. |
+
+### 401 — Invalid API key
+
+```json
+{
+  "error": {
+    "message": "Invalid or expired authentication token",
+    "code": "INVALID_API_KEY"
+  }
+}
+```
+
+Common causes:
+- Typo in the API key
+- The key has been revoked from Settings
+- Using a test key against the production API or vice versa
+
+### 403 — Insufficient scope
+
+```json
+{
+  "error": {
+    "message": "Insufficient scope. Required: write:leads",
+    "code": "INSUFFICIENT_SCOPE"
+  }
+}
+```
+
+Solution: Create a new API key with the required scope, or update the existing key's permissions from **Settings > API Keys**.
+
+### 429 — Rate limited
+
+```json
+{
+  "error": {
+    "message": "Rate limit exceeded. Please retry after 2026-03-06T10:40:00Z.",
+    "code": "RATE_LIMIT_EXCEEDED"
+  }
+}
+```
+
+Solution: Wait until the `X-RateLimit-Reset` timestamp, then retry.
+
+## Response format
+
+All API responses follow a consistent format.
+
+### Success responses
+
+```json
+{
+  "data": {
+    "id": "lead_abc123",
+    "first_name": "Jane",
+    "last_name": "Smith"
+  },
+  "message": "Success"
+}
+```
+
+The `data` field contains the response payload. The `message` field is optional and provides a human-readable description.
+
+### Error responses
+
+```json
+{
+  "error": {
+    "message": "Human-readable error message",
+    "code": "ERROR_CODE",
+    "details": [
+      {
+        "field": "linkedin_url",
+        "message": "Must be a valid LinkedIn profile URL"
+      }
+    ]
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error.message` | string | A human-readable description of the error |
+| `error.code` | string | A machine-readable error code (optional) |
+| `error.details` | array | Field-level validation errors (optional, present on `400` responses) |
+
+## Security best practices
+
+<CardGroup cols={2}>
+  <Card title="Use environment variables" icon="lock">
+    Never hard-code API keys in source code. Store them in environment variables or a secrets manager.
+  </Card>
+  <Card title="Rotate keys regularly" icon="rotate">
+    Create new keys periodically and revoke old ones. This limits the impact if a key is compromised.
+  </Card>
+  <Card title="Use minimal scopes" icon="shield-check">
+    Only grant the scopes your integration actually needs. Avoid using the wildcard scope in production.
+  </Card>
+  <Card title="Monitor usage" icon="chart-bar">
+    Review your API key activity in Settings to detect unexpected usage patterns.
+  </Card>
+</CardGroup>
