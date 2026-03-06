@@ -46,192 +46,98 @@
           {
             "group": "Leads",
             "pages": [
-              {
-                "openapi": "GET /public/leads"
-              },
-              {
-                "openapi": "POST /public/leads"
-              },
-              {
-                "openapi": "POST /public/leads/batch"
-              },
-              {
-                "openapi": "GET /public/leads/{id}"
-              },
-              {
-                "openapi": "PUT /public/leads/{id}"
-              },
-              {
-                "openapi": "DELETE /public/leads/{id}"
-              },
-              {
-                "openapi": "PATCH /public/leads/{id}/status"
-              },
-              {
-                "openapi": "POST /public/leads/{id}/tags"
-              },
-              {
-                "openapi": "DELETE /public/leads/{id}/tags"
-              },
-              {
-                "openapi": "GET /public/leads/{id}/activity"
-              }
+              "GET /public/leads",
+              "POST /public/leads",
+              "POST /public/leads/batch",
+              "GET /public/leads/{id}",
+              "PUT /public/leads/{id}",
+              "DELETE /public/leads/{id}",
+              "PATCH /public/leads/{id}/status",
+              "POST /public/leads/{id}/tags",
+              "DELETE /public/leads/{id}/tags",
+              "GET /public/leads/{id}/activity"
             ]
           },
           {
             "group": "Campaigns",
             "pages": [
-              {
-                "openapi": "GET /public/campaigns"
-              },
-              {
-                "openapi": "GET /public/campaigns/{id}"
-              },
-              {
-                "openapi": "GET /public/campaigns/{id}/leads"
-              },
-              {
-                "openapi": "POST /public/campaigns/{id}/enroll"
-              },
-              {
-                "openapi": "POST /public/campaigns/{id}/unenroll"
-              },
-              {
-                "openapi": "POST /public/campaigns/{id}/start"
-              },
-              {
-                "openapi": "POST /public/campaigns/{id}/pause"
-              },
-              {
-                "openapi": "POST /public/campaigns/{id}/resume"
-              }
+              "GET /public/campaigns",
+              "GET /public/campaigns/{id}",
+              "GET /public/campaigns/{id}/leads",
+              "POST /public/campaigns/{id}/enroll",
+              "POST /public/campaigns/{id}/unenroll",
+              "POST /public/campaigns/{id}/start",
+              "POST /public/campaigns/{id}/pause",
+              "POST /public/campaigns/{id}/resume"
             ]
           },
           {
             "group": "LinkedIn Actions",
             "pages": [
-              {
-                "openapi": "POST /public/linkedin/send-connection"
-              },
-              {
-                "openapi": "POST /public/linkedin/send-message"
-              },
-              {
-                "openapi": "POST /public/linkedin/send-inmail"
-              },
-              {
-                "openapi": "POST /public/linkedin/view-profile"
-              },
-              {
-                "openapi": "GET /public/linkedin/job/{job_id}"
-              }
+              "POST /public/linkedin/send-connection",
+              "POST /public/linkedin/send-message",
+              "POST /public/linkedin/send-inmail",
+              "POST /public/linkedin/view-profile",
+              "GET /public/linkedin/job/{job_id}"
             ]
           },
           {
             "group": "Conversations",
             "pages": [
-              {
-                "openapi": "GET /public/conversations"
-              },
-              {
-                "openapi": "GET /public/conversations/{id}"
-              }
+              "GET /public/conversations",
+              "GET /public/conversations/{id}"
             ]
           },
           {
             "group": "Lead Groups",
             "pages": [
-              {
-                "openapi": "GET /public/lead-groups"
-              },
-              {
-                "openapi": "POST /public/lead-groups"
-              },
-              {
-                "openapi": "POST /public/lead-groups/{id}/leads"
-              },
-              {
-                "openapi": "DELETE /public/lead-groups/{id}/leads"
-              }
+              "GET /public/lead-groups",
+              "POST /public/lead-groups",
+              "POST /public/lead-groups/{id}/leads",
+              "DELETE /public/lead-groups/{id}/leads"
             ]
           },
           {
             "group": "LinkedIn Accounts",
             "pages": [
-              {
-                "openapi": "GET /public/linkedin-accounts"
-              },
-              {
-                "openapi": "GET /public/linkedin-accounts/{id}"
-              }
+              "GET /public/linkedin-accounts",
+              "GET /public/linkedin-accounts/{id}"
             ]
           },
           {
             "group": "Analytics",
             "pages": [
-              {
-                "openapi": "GET /public/analytics/overview"
-              },
-              {
-                "openapi": "GET /public/analytics/campaigns/{id}"
-              }
+              "GET /public/analytics/overview",
+              "GET /public/analytics/campaigns/{id}"
             ]
           },
           {
             "group": "Webhook Events",
             "pages": [
-              {
-                "openapi": "GET /public/webhook-events"
-              }
+              "GET /public/webhook-events"
             ]
           },
           {
             "group": "Webhook Management",
             "pages": [
-              {
-                "openapi": "GET /webhooks"
-              },
-              {
-                "openapi": "POST /webhooks"
-              },
-              {
-                "openapi": "GET /webhooks/{id}"
-              },
-              {
-                "openapi": "PUT /webhooks/{id}"
-              },
-              {
-                "openapi": "DELETE /webhooks/{id}"
-              },
-              {
-                "openapi": "PATCH /webhooks/{id}/rotate-secret"
-              },
-              {
-                "openapi": "POST /webhooks/{id}/test"
-              },
-              {
-                "openapi": "GET /webhooks/{id}/deliveries"
-              },
-              {
-                "openapi": "POST /webhooks/{id}/retry"
-              }
+              "GET /webhooks",
+              "POST /webhooks",
+              "GET /webhooks/{id}",
+              "PUT /webhooks/{id}",
+              "DELETE /webhooks/{id}",
+              "PATCH /webhooks/{id}/rotate-secret",
+              "POST /webhooks/{id}/test",
+              "GET /webhooks/{id}/deliveries",
+              "POST /webhooks/{id}/retry"
             ]
           },
           {
             "group": "API Keys",
             "pages": [
-              {
-                "openapi": "GET /api-keys"
-              },
-              {
-                "openapi": "POST /api-keys"
-              },
-              {
-                "openapi": "PUT /api-keys/{id}"
-              },
-              {
-                "openapi": "DELETE /api-keys/{id}"
-              }
+              "GET /api-keys",
+              "POST /api-keys",
+              "PUT /api-keys/{id}",
+              "DELETE /api-keys/{id}"
             ]
           }
         ]
