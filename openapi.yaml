@@ -1,4 +1,4 @@
-openapi: '3.1.0'
+openapi: '3.0.3'
 info:
   title: Cold Navigator API
   version: '2026-03-01'
@@ -14,10 +14,12 @@ info:
     Rate limits depend on your subscription plan:
     | Plan | Per Minute | Per Day |
     |------|-----------|---------|
-    | Free / Trial | 30 | 1,000 |
-    | Starter | 60 | 5,000 |
-    | Pro | 120 | 20,000 |
-    | Enterprise | 300 | 100,000 |
+    | Free Trial | 30 | 1,000 |
+    | Single | 60 | 5,000 |
+    | Team | 120 | 20,000 |
+    | Growth | 300 | 100,000 |
+
+    > **Note:** Free plan users do not have API access. Upgrade to use the API.
 
     Rate limit headers are included in every response:
     - `X-RateLimit-Limit` — Maximum requests allowed
