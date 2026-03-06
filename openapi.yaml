@@ -45,127 +45,436 @@ components:
       type: apiKey
       in: header
       name: x-api-key
-      description: API key with appropriate scopes
+      description: API key created from Settings > API Keys
 
   schemas:
     Lead:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        first_name: { type: string }
-        last_name: { type: string }
-        linkedin_url: { type: string, format: uri }
-        email: { type: string, format: email }
-        company: { type: string }
-        position: { type: string, description: Job title / position }
-        location: { type: string }
-        phone: { type: string }
+        id:
+          type: string
+          format: uuid
+          example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+        first_name:
+          type: string
+          example: Jane
+        last_name:
+          type: string
+          example: Smith
+        linkedin_url:
+          type: string
+          format: uri
+          example: https://www.linkedin.com/in/janesmith
+        email:
+          type: string
+          format: email
+          example: jane.smith@acme.com
+          nullable: true
+        company:
+          type: string
+          example: Acme Corp
+          nullable: true
+        position:
+          type: string
+          description: Job title or position at the company
+          example: VP of Sales
+          nullable: true
+        location:
+          type: string
+          example: San Francisco, CA
+          nullable: true
+        phone:
+          type: string
+          example: '+1 555-0123'
+          nullable: true
         status:
           type: string
-          enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested]
-        is_blacklisted: { type: boolean }
-        custom_fields: { type: object }
-        tags: { type: array, items: { type: string } }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
+          description: Current pipeline status of the lead
+          enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+          example: new
+        is_blacklisted:
+          type: boolean
+          description: Whether the lead is blacklisted from all outreach
+          example: false
+        custom_fields:
+          type: object
+          description: Arbitrary key-value pairs for custom data
+          example: { industry: "SaaS", employee_count: "500-1000" }
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorizing and filtering leads
+          example: ["enterprise", "inbound"]
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T10:30:00Z'
 
     Campaign:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
+        id:
+          type: string
+          format: uuid
+          example: c9d8e7f6-5432-1abc-def0-987654321abc
+        name:
+          type: string
+          example: Q1 Enterprise Outreach
         status:
           type: string
+          description: Current campaign lifecycle status
           enum: [draft, active, paused, completed, archived]
+          example: active
         stats:
           type: object
+          description: Campaign performance metrics (read-only)
           properties:
-            total_leads: { type: integer }
-            connections_sent: { type: integer }
-            connections_accepted: { type: integer }
-            messages_sent: { type: integer }
-            replies_received: { type: integer }
-            acceptance_rate: { type: number }
-            reply_rate: { type: number }
-        created_at: { type: string, format: date-time }
-        started_at: { type: string, format: date-time, nullable: true }
-        completed_at: { type: string, format: date-time, nullable: true }
+            total_leads:
+              type: integer
+              description: Total leads enrolled in campaign
+              example: 250
+            connections_sent:
+              type: integer
+              example: 200
+            connections_accepted:
+              type: integer
+              example: 67
+            messages_sent:
+              type: integer
+              example: 120
+            replies_received:
+              type: integer
+              example: 38
+            acceptance_rate:
+              type: number
+              description: Percentage of connection requests accepted (0-100)
+              example: 33.5
+            reply_rate:
+              type: number
+              description: Percentage of messages that got replies (0-100)
+              example: 31.7
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-02-15T09:00:00Z'
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-02-15T09:00:00Z'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
 
     LinkedInAccount:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        full_name: { type: string }
-        linkedin_url: { type: string }
-        status: { type: string }
-        health_score: { type: integer }
-        is_rate_limited: { type: boolean }
-        daily_connection_limit: { type: integer }
-        daily_message_limit: { type: integer }
-        connections_sent_today: { type: integer }
-        messages_sent_today: { type: integer }
-        last_activity_at: { type: string, format: date-time }
+        id:
+          type: string
+          format: uuid
+          example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
+        full_name:
+          type: string
+          example: John Sales
+        linkedin_url:
+          type: string
+          example: https://www.linkedin.com/in/johnsales
+        status:
+          type: string
+          description: Current connection status of the LinkedIn account
+          enum: [connected, disconnected, rate_limited, warming_up]
+          example: connected
+        health_score:
+          type: integer
+          description: Account health score (0-100). Higher is better.
+          example: 95
+          minimum: 0
+          maximum: 100
+        is_rate_limited:
+          type: boolean
+          description: Whether LinkedIn has rate-limited this account
+          example: false
+        daily_connection_limit:
+          type: integer
+          description: Maximum connection requests allowed per day
+          example: 25
+        daily_message_limit:
+          type: integer
+          description: Maximum messages allowed per day
+          example: 50
+        connections_sent_today:
+          type: integer
+          example: 8
+        messages_sent_today:
+          type: integer
+          example: 15
+        last_activity_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T14:23:00Z'
+          nullable: true
 
     AsyncJob:
       type: object
+      description: Represents an async LinkedIn action queued for processing
       properties:
-        job_id: { type: string }
+        job_id:
+          type: string
+          description: BullMQ job ID for tracking
+          example: 'linkedin-action:f7e6d5c4-b3a2-1098'
         status:
           type: string
+          description: Current job processing status
           enum: [queued, active, completed, failed]
-        result: { type: object, nullable: true }
-        error: { type: string, nullable: true }
-        created_at: { type: string, format: date-time }
-        completed_at: { type: string, format: date-time, nullable: true }
+          example: queued
+        result:
+          type: object
+          nullable: true
+          description: Action result (only present when status is completed)
+          example: null
+        error:
+          type: string
+          nullable: true
+          description: Error message (only present when status is failed)
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T10:30:00Z'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
 
     Webhook:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        workspace_id: { type: string, format: uuid }
-        name: { type: string }
-        url: { type: string, format: uri }
-        event_types: { type: array, items: { type: string } }
-        is_active: { type: boolean }
-        description: { type: string, nullable: true }
-        headers: { type: object, nullable: true }
-        last_triggered_at: { type: string, format: date-time, nullable: true }
-        last_success_at: { type: string, format: date-time, nullable: true }
-        last_failure_at: { type: string, format: date-time, nullable: true }
-        failure_count: { type: integer }
-        consecutive_failures: { type: integer }
-        total_deliveries: { type: integer }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        workspace_id:
+          type: string
+          format: uuid
+          example: d005754a-942a-4eb8-9253-7cc89b548f6f
+        name:
+          type: string
+          example: CRM Sync
+        url:
+          type: string
+          format: uri
+          example: https://your-app.com/webhooks/cold-navigator
+        event_types:
+          type: array
+          description: Which events trigger this webhook. Must contain at least one valid event type.
+          items:
+            type: string
+            enum:
+              - lead.created
+              - lead.updated
+              - lead.status_changed
+              - lead.replied
+              - lead.connected
+              - campaign.started
+              - campaign.completed
+              - campaign.paused
+              - campaign.error
+              - message.sent
+              - message.received
+              - connection.sent
+              - connection.accepted
+              - workflow.step_completed
+              - workflow.lead_finished
+              - account.disconnected
+              - account.rate_limited
+          example: ["lead.replied", "lead.connected", "campaign.completed"]
+        is_active:
+          type: boolean
+          description: Whether the webhook is currently receiving events
+          example: true
+        description:
+          type: string
+          nullable: true
+          example: Syncs lead replies to our CRM
+        headers:
+          type: object
+          nullable: true
+          description: Custom HTTP headers to include in every delivery
+          example: { "X-Custom-Header": "my-value" }
+        last_triggered_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T14:23:00Z'
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T14:23:00Z'
+        last_failure_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        failure_count:
+          type: integer
+          description: Total number of failed deliveries
+          example: 0
+        consecutive_failures:
+          type: integer
+          description: Consecutive failures. Webhook auto-disables at 5.
+          example: 0
+        total_deliveries:
+          type: integer
+          description: Total number of delivery attempts
+          example: 42
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-01T10:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T14:23:00Z'
 
     WebhookDelivery:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        webhook_id: { type: string, format: uuid }
-        event_type: { type: string }
-        event_id: { type: string }
+        id:
+          type: string
+          format: uuid
+          example: 57ba3085-5b0b-4736-b5b5-7b936d09d1ef
+        webhook_id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        event_type:
+          type: string
+          description: The event that triggered this delivery
+          enum:
+            - lead.created
+            - lead.updated
+            - lead.status_changed
+            - lead.replied
+            - lead.connected
+            - campaign.started
+            - campaign.completed
+            - campaign.paused
+            - campaign.error
+            - message.sent
+            - message.received
+            - connection.sent
+            - connection.accepted
+            - workflow.step_completed
+            - workflow.lead_finished
+            - account.disconnected
+            - account.rate_limited
+            - webhook.test
+          example: lead.replied
+        event_id:
+          type: string
+          description: Unique event identifier. Same across retries for deduplication.
+          example: evt_m3k9x2p7_a1b2c3d4e5f6g7h8
         status:
           type: string
+          description: |
+            Delivery status:
+            - `pending` — Queued, not yet attempted
+            - `success` — Endpoint returned 2xx
+            - `failed` — Endpoint returned non-2xx or timed out (will retry)
+            - `dead_letter` — All 5 retry attempts exhausted
           enum: [pending, success, failed, dead_letter]
-        response_status: { type: integer, nullable: true }
-        duration_ms: { type: integer, nullable: true }
-        error_message: { type: string, nullable: true }
-        attempt_number: { type: integer }
-        created_at: { type: string, format: date-time }
-        completed_at: { type: string, format: date-time, nullable: true }
+          example: success
+        response_status:
+          type: integer
+          nullable: true
+          description: HTTP status code returned by your endpoint (null if connection failed or timed out)
+          example: 200
+        duration_ms:
+          type: integer
+          nullable: true
+          description: Request round-trip time in milliseconds
+          example: 234
+        error_message:
+          type: string
+          nullable: true
+          description: Error description for failed deliveries
+          example: null
+        attempt_number:
+          type: integer
+          description: Which attempt this is (1-5)
+          example: 1
+          minimum: 1
+          maximum: 5
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T14:23:17Z'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T14:23:17Z'
 
     ApiKey:
       type: object
       properties:
-        id: { type: string, format: uuid }
-        name: { type: string }
-        key_prefix: { type: string }
-        scopes: { type: array, items: { type: string } }
-        is_active: { type: boolean }
-        last_used_at: { type: string, format: date-time, nullable: true }
-        expires_at: { type: string, format: date-time, nullable: true }
-        created_at: { type: string, format: date-time }
+        id:
+          type: string
+          format: uuid
+          example: b2c3d4e5-f6a7-8901-bcde-f12345678901
+        name:
+          type: string
+          description: Descriptive name for this API key
+          example: CRM Integration
+        key_prefix:
+          type: string
+          description: First 12 characters of the key for identification
+          example: cn_live_f2e6
+        scopes:
+          type: array
+          description: |
+            Permissions granted to this key. Use the narrowest scopes possible.
+          items:
+            type: string
+            enum:
+              - 'read:leads'
+              - 'write:leads'
+              - 'read:campaigns'
+              - 'write:campaigns'
+              - 'read:conversations'
+              - 'read:accounts'
+              - 'read:analytics'
+              - 'write:linkedin_actions'
+              - '*'
+          example: ["read:leads", "write:leads"]
+        is_active:
+          type: boolean
+          example: true
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T14:23:00Z'
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiration date. Null means never expires.
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-03-01T10:00:00Z'
 
     ApiKeyCreated:
       allOf:
@@ -174,13 +483,81 @@ components:
           properties:
             key:
               type: string
-              description: Full API key — only shown once at creation. Store it securely.
+              description: |
+                Full API key — **only shown once at creation**. Store it securely.
+                Format: `cn_live_` followed by 32 hex characters.
+              example: cn_live_f2e68200deb419c3add1824116c8638e
+
+    LeadGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: d63ee4cf-3107-4291-a498-43e5cc498fac
+        name:
+          type: string
+          example: Enterprise Prospects
+        description:
+          type: string
+          nullable: true
+          example: Leads from Q1 enterprise campaign
+        lead_count:
+          type: integer
+          example: 150
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-02-01T10:00:00Z'
+
+    Activity:
+      type: object
+      description: A single workflow action or event for a lead
+      properties:
+        id:
+          type: string
+          format: uuid
+        lead_workflow_state_id:
+          type: string
+          format: uuid
+        node_id:
+          type: string
+          description: Workflow node that triggered this action
+          example: node_3
+        action_type:
+          type: string
+          description: Type of action performed
+          enum: [connection_request, send_message, send_inmail, view_profile, reply_received, connection_accepted, find_email, email]
+          example: send_message
+        status:
+          type: string
+          enum: [pending, success, failed, skipped]
+          example: success
+        result:
+          type: object
+          nullable: true
+          description: Action-specific result data
+        error_message:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          example: '2026-03-06T09:12:30Z'
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T09:12:33Z'
 
     SuccessResponse:
       type: object
       properties:
-        data: { type: object }
-        message: { type: string }
+        data:
+          type: object
+        message:
+          type: string
+          example: Success
 
     ErrorResponse:
       type: object
@@ -188,28 +565,61 @@ components:
         error:
           type: object
           properties:
-            message: { type: string }
-            code: { type: string }
-            details: { type: array, items: { type: object } }
+            message:
+              type: string
+              example: Human-readable error message
+            code:
+              type: string
+              description: Machine-readable error code
+              enum: [INVALID_API_KEY, INSUFFICIENT_SCOPE, RATE_LIMIT_EXCEEDED, VALIDATION_ERROR, NOT_FOUND, DUPLICATE_LEAD]
+              example: VALIDATION_ERROR
+            details:
+              type: array
+              description: Field-level validation errors (only on 400 responses)
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: linkedin_url
+                  message:
+                    type: string
+                    example: Must be a valid LinkedIn profile URL
 
     PaginationMeta:
       type: object
       properties:
-        total: { type: integer }
-        limit: { type: integer }
-        offset: { type: integer }
+        total:
+          type: integer
+          description: Total number of items matching the query
+          example: 142
+        limit:
+          type: integer
+          description: Maximum items per page
+          example: 50
+        offset:
+          type: integer
+          description: Number of items skipped
+          example: 0
 
   parameters:
     limitParam:
       name: limit
       in: query
-      schema: { type: integer, default: 50, maximum: 100 }
-      description: Maximum number of items to return
+      schema:
+        type: integer
+        default: 50
+        maximum: 100
+        minimum: 1
+      description: Maximum number of items to return (1-100)
     offsetParam:
       name: offset
       in: query
-      schema: { type: integer, default: 0 }
-      description: Number of items to skip
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+      description: Number of items to skip for pagination
 
 paths:
   # ============ LEADS ============
@@ -225,48 +635,91 @@ paths:
         - $ref: '#/components/parameters/offsetParam'
         - name: status
           in: query
-          schema: { type: string }
+          schema:
+            type: string
+            enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
           description: Filter by lead status
+          example: replied
         - name: campaign_id
           in: query
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
           description: Filter by campaign enrollment
         - name: tag
           in: query
-          schema: { type: string }
-          description: Filter by tag
+          schema:
+            type: string
+          description: Filter by tag (exact match)
+          example: enterprise
         - name: search
           in: query
-          schema: { type: string }
-          description: Search by name, email, or company
+          schema:
+            type: string
+          description: Search by name, email, or company (case-insensitive partial match)
+          example: Acme
         - name: updated_after
           in: query
-          schema: { type: string, format: date-time }
-          description: Only leads updated after this timestamp
+          schema:
+            type: string
+            format: date-time
+          description: Only return leads updated after this ISO 8601 timestamp
+          example: '2026-03-01T00:00:00Z'
         - name: sort
           in: query
-          schema: { type: string, default: created_at }
+          schema:
+            type: string
+            enum: [created_at, updated_at, first_name, last_name, company, status]
+            default: created_at
+          description: Field to sort results by
         - name: order
           in: query
-          schema: { type: string, enum: [asc, desc], default: desc }
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
       responses:
         '200':
-          description: Lead list
+          description: Lead list with pagination
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    type: array
-                    items: { $ref: '#/components/schemas/Lead' }
-                  meta: { $ref: '#/components/schemas/PaginationMeta' }
-        '401': { description: Invalid or missing API key }
-        '403': { description: Insufficient scope }
+                    type: object
+                    properties:
+                      leads:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Lead'
+                      total:
+                        type: integer
+                        example: 142
+                      limit:
+                        type: integer
+                        example: 50
+                      offset:
+                        type: integer
+                        example: 0
+                  message:
+                    type: string
+                    example: Success
+        '401':
+          description: Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Insufficient scope — requires `read:leads`
     post:
       operationId: createLead
       summary: Create lead
-      description: Creates a new lead in your workspace.
+      description: |
+        Creates a new lead in your workspace and adds it to the specified lead group.
+        Duplicates are detected by `linkedin_url` — if a lead with the same URL already exists, a `409 Conflict` is returned.
       tags: [Leads]
       x-required-scope: write:leads
       requestBody:
@@ -276,21 +729,50 @@ paths:
             schema:
               type: object
               properties:
-                first_name: { type: string }
-                last_name: { type: string }
+                first_name:
+                  type: string
+                  example: Jane
+                last_name:
+                  type: string
+                  example: Smith
                 linkedin_url:
                   type: string
                   format: uri
-                  description: Must be a valid LinkedIn profile URL (e.g. https://www.linkedin.com/in/username)
+                  description: Must be a valid LinkedIn profile URL
                   pattern: '^https?://(www\.)?linkedin\.com/in/[\w-]+/?$'
-                lead_group_id: { type: string, format: uuid, description: UUID of the lead group to add this lead to }
-                company: { type: string }
-                position: { type: string, description: Job title / position }
-                location: { type: string }
-                email: { type: string, format: email }
-                phone: { type: string }
-                custom_fields: { type: object }
-                tags: { type: array, items: { type: string } }
+                  example: https://www.linkedin.com/in/janesmith
+                lead_group_id:
+                  type: string
+                  format: uuid
+                  description: UUID of the lead group to add this lead to. Get group IDs from the Lead Groups endpoints.
+                  example: d63ee4cf-3107-4291-a498-43e5cc498fac
+                company:
+                  type: string
+                  example: Acme Corp
+                position:
+                  type: string
+                  description: Job title or position
+                  example: VP of Sales
+                location:
+                  type: string
+                  example: San Francisco, CA
+                email:
+                  type: string
+                  format: email
+                  example: jane.smith@acme.com
+                phone:
+                  type: string
+                  example: '+1 555-0123'
+                custom_fields:
+                  type: object
+                  description: Arbitrary key-value pairs
+                  example: { industry: "SaaS" }
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags to apply to the new lead
+                  example: ["enterprise", "inbound"]
               required: [first_name, last_name, linkedin_url, lead_group_id]
       responses:
         '201':
@@ -300,13 +782,24 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/Lead' }
+                  data:
+                    $ref: '#/components/schemas/Lead'
+                  message:
+                    type: string
+                    example: Lead created
+        '400':
+          description: Validation error (missing required fields, invalid LinkedIn URL format)
+        '409':
+          description: Duplicate lead — a lead with this LinkedIn URL already exists
 
   /public/leads/batch:
     post:
       operationId: batchCreateLeads
       summary: Batch create/update leads
-      description: Create or update up to 100 leads in a single request. Matching is done by linkedin_url or email.
+      description: |
+        Create or update up to 100 leads in a single request.
+        Matching is done by `linkedin_url`. If a lead with the same URL exists, it is updated (when `update_existing` is true).
+        Each lead must have a valid `linkedin_url`.
       tags: [Leads]
       x-required-scope: write:leads
       requestBody:
@@ -322,26 +815,51 @@ paths:
                   items:
                     type: object
                     properties:
-                      first_name: { type: string }
-                      last_name: { type: string }
+                      first_name:
+                        type: string
+                        example: Jane
+                      last_name:
+                        type: string
+                        example: Smith
                       linkedin_url:
                         type: string
                         format: uri
                         description: Must be a valid LinkedIn profile URL
                         pattern: '^https?://(www\.)?linkedin\.com/in/[\w-]+/?$'
-                      company: { type: string }
-                      position: { type: string, description: Job title / position }
-                      location: { type: string }
-                      email: { type: string, format: email }
-                      phone: { type: string }
-                      custom_fields: { type: object }
-                      tags: { type: array, items: { type: string } }
+                        example: https://www.linkedin.com/in/janesmith
+                      company:
+                        type: string
+                        example: Acme Corp
+                      position:
+                        type: string
+                        example: VP of Sales
+                      location:
+                        type: string
+                      email:
+                        type: string
+                        format: email
+                      phone:
+                        type: string
+                      custom_fields:
+                        type: object
+                      tags:
+                        type: array
+                        items:
+                          type: string
                     required: [first_name, last_name, linkedin_url]
-                update_existing: { type: boolean, default: true }
+                lead_group_id:
+                  type: string
+                  format: uuid
+                  description: Lead group to add new leads to
+                  example: d63ee4cf-3107-4291-a498-43e5cc498fac
+                update_existing:
+                  type: boolean
+                  default: true
+                  description: If true, updates existing leads matched by linkedin_url. If false, skips them.
               required: [leads]
       responses:
         '201':
-          description: Batch result
+          description: Batch result summary
           content:
             application/json:
               schema:
@@ -350,10 +868,31 @@ paths:
                   data:
                     type: object
                     properties:
-                      created: { type: integer }
-                      updated: { type: integer }
-                      skipped: { type: integer }
-                      errors: { type: array }
+                      created:
+                        type: integer
+                        description: Number of new leads created
+                        example: 8
+                      updated:
+                        type: integer
+                        description: Number of existing leads updated
+                        example: 2
+                      skipped:
+                        type: integer
+                        description: Number of leads skipped due to errors
+                        example: 1
+                      errors:
+                        type: array
+                        description: Per-lead error details
+                        items:
+                          type: object
+                          properties:
+                            index:
+                              type: integer
+                              description: Array index of the failed lead
+                              example: 5
+                            error:
+                              type: string
+                              example: linkedin_url is required and must be a valid LinkedIn profile URL
 
   /public/leads/{id}:
     get:
@@ -366,7 +905,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
+          example: f7e6d5c4-b3a2-1098-7654-321fedcba098
       responses:
         '200':
           description: Lead details
@@ -375,64 +917,111 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/Lead' }
-        '404': { description: Lead not found }
+                  data:
+                    $ref: '#/components/schemas/Lead'
+                  message:
+                    type: string
+                    example: Success
+        '404':
+          description: Lead not found
     put:
       operationId: updateLead
       summary: Update lead
-      description: Partially update a lead's fields.
+      description: |
+        Partially update a lead's fields. Only include the fields you want to change.
+        To change status, use the dedicated `PATCH /leads/{id}/status` endpoint instead.
       tags: [Leads]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                first_name: { type: string }
-                last_name: { type: string }
-                company: { type: string }
-                position: { type: string, description: Job title / position }
-                location: { type: string }
-                email: { type: string }
-                phone: { type: string }
-                custom_fields: { type: object }
-                status: { type: string }
-                is_blacklisted: { type: boolean }
+                first_name:
+                  type: string
+                  example: Jane
+                last_name:
+                  type: string
+                  example: Smith-Johnson
+                company:
+                  type: string
+                  example: Acme Corp
+                position:
+                  type: string
+                  example: CTO
+                location:
+                  type: string
+                  example: New York, NY
+                email:
+                  type: string
+                  format: email
+                  example: jane@acme.com
+                phone:
+                  type: string
+                custom_fields:
+                  type: object
+                  example: { industry: "SaaS", notes: "Met at conference" }
+                status:
+                  type: string
+                  enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+                is_blacklisted:
+                  type: boolean
       responses:
         '200':
           description: Lead updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Lead'
+                  message:
+                    type: string
+                    example: Lead updated
+        '404':
+          description: Lead not found
     delete:
       operationId: deleteLead
       summary: Delete lead
+      description: Permanently deletes a lead and all associated data. This cannot be undone.
       tags: [Leads]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Lead deleted
+        '404':
+          description: Lead not found
 
   /public/leads/{id}/status:
     patch:
       operationId: changeLeadStatus
       summary: Change lead status
-      description: Updates the lead status and returns the old and new values.
+      description: Updates the lead's pipeline status and returns the old and new values. Also triggers a `lead.status_changed` webhook event.
       tags: [Leads]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -440,7 +1029,11 @@ paths:
             schema:
               type: object
               properties:
-                status: { type: string }
+                status:
+                  type: string
+                  description: New status to set
+                  enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+                  example: qualified
               required: [status]
       responses:
         '200':
@@ -453,21 +1046,34 @@ paths:
                   data:
                     type: object
                     properties:
-                      id: { type: string }
-                      old_status: { type: string }
-                      new_status: { type: string }
+                      id:
+                        type: string
+                        format: uuid
+                        example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+                      old_status:
+                        type: string
+                        example: new
+                      new_status:
+                        type: string
+                        example: qualified
+                  message:
+                    type: string
+                    example: Status updated
 
   /public/leads/{id}/tags:
     post:
       operationId: addLeadTags
       summary: Add tags to lead
+      description: Adds one or more tags to a lead. Duplicate tags are silently ignored.
       tags: [Leads]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -475,21 +1081,46 @@ paths:
             schema:
               type: object
               properties:
-                tags: { type: array, items: { type: string } }
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags to add (strings, any value)
+                  example: ["enterprise", "high-intent", "ai-qualified"]
               required: [tags]
       responses:
         '200':
           description: Tags added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                        description: All tags currently on the lead
+                        example: ["enterprise", "high-intent", "ai-qualified"]
+                  message:
+                    type: string
+                    example: Tags added
     delete:
       operationId: removeLeadTags
       summary: Remove tags from lead
+      description: Removes one or more tags from a lead. Tags not present on the lead are silently ignored.
       tags: [Leads]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -497,36 +1128,86 @@ paths:
             schema:
               type: object
               properties:
-                tags: { type: array, items: { type: string } }
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags to remove
+                  example: ["ai-qualified"]
               required: [tags]
       responses:
         '200':
           description: Tags removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                        description: Remaining tags on the lead
+                        example: ["enterprise", "high-intent"]
+                  message:
+                    type: string
+                    example: Tags removed
 
   /public/leads/{id}/activity:
     get:
       operationId: getLeadActivity
       summary: Get lead activity history
-      description: Returns workflow actions and messages for this lead.
+      description: |
+        Returns workflow actions and events for this lead across all campaigns.
+        Includes connection requests, messages sent, replies received, and other workflow steps.
       tags: [Leads]
       x-required-scope: read:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/offsetParam'
       responses:
         '200':
           description: Activity list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      activities:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Activity'
+                      total:
+                        type: integer
+                        example: 5
+                      limit:
+                        type: integer
+                        example: 50
+                      offset:
+                        type: integer
+                        example: 0
+                  message:
+                    type: string
+                    example: Success
 
   # ============ CAMPAIGNS ============
   /public/campaigns:
     get:
       operationId: listCampaigns
       summary: List campaigns
-      description: Returns a list of campaigns with basic stats.
+      description: Returns a paginated list of campaigns with performance stats.
       tags: [Campaigns]
       x-required-scope: read:campaigns
       parameters:
@@ -534,24 +1215,50 @@ paths:
         - $ref: '#/components/parameters/offsetParam'
         - name: status
           in: query
-          schema: { type: string }
+          schema:
+            type: string
+            enum: [draft, active, paused, completed, archived]
           description: Filter by campaign status
+          example: active
       responses:
         '200':
           description: Campaign list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      campaigns:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Campaign'
+                      total:
+                        type: integer
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                  message:
+                    type: string
+                    example: Success
 
   /public/campaigns/{id}:
     get:
       operationId: getCampaign
       summary: Get campaign details with stats
-      description: Returns detailed campaign info including performance statistics.
+      description: Returns detailed campaign info including performance statistics and workflow definition.
       tags: [Campaigns]
       x-required-scope: read:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Campaign details
@@ -560,40 +1267,56 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/Campaign' }
+                  data:
+                    $ref: '#/components/schemas/Campaign'
+                  message:
+                    type: string
+                    example: Success
+        '404':
+          description: Campaign not found
 
   /public/campaigns/{id}/leads:
     get:
       operationId: getCampaignLeads
       summary: List campaign leads with workflow state
+      description: Returns leads enrolled in this campaign with their current workflow step and status.
       tags: [Campaigns]
       x-required-scope: read:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
         - $ref: '#/components/parameters/limitParam'
         - $ref: '#/components/parameters/offsetParam'
         - name: status
           in: query
-          schema: { type: string }
+          schema:
+            type: string
+            enum: [active, paused, completed, failed, pending]
+          description: Filter by workflow status within the campaign
       responses:
         '200':
-          description: Campaign leads
+          description: Campaign leads with workflow state
 
   /public/campaigns/{id}/enroll:
     post:
       operationId: enrollLeads
       summary: Enroll leads into campaign
-      description: Enroll one or more leads into the campaign workflow.
+      description: |
+        Enroll one or more leads into the campaign workflow. Leads must exist in the workspace.
+        Already-enrolled leads are silently skipped.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -603,23 +1326,44 @@ paths:
               properties:
                 lead_ids:
                   type: array
-                  items: { type: string, format: uuid }
+                  items:
+                    type: string
+                    format: uuid
+                  description: UUIDs of leads to enroll
+                  example: ["f7e6d5c4-b3a2-1098-7654-321fedcba098", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"]
               required: [lead_ids]
       responses:
         '200':
           description: Enrollment result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      enrolled:
+                        type: integer
+                        example: 2
+                      skipped:
+                        type: integer
+                        example: 0
 
   /public/campaigns/{id}/unenroll:
     post:
       operationId: unenrollLeads
       summary: Unenroll leads from campaign
+      description: Remove leads from the campaign workflow. Their workflow state is set to cancelled.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -629,7 +1373,10 @@ paths:
               properties:
                 lead_ids:
                   type: array
-                  items: { type: string, format: uuid }
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["f7e6d5c4-b3a2-1098-7654-321fedcba098"]
               required: [lead_ids]
       responses:
         '200':
@@ -639,28 +1386,40 @@ paths:
     post:
       operationId: startCampaign
       summary: Start campaign
+      description: |
+        Starts a draft or paused campaign. The campaign must have at least one enrolled lead and a valid workflow.
+        Triggers a `campaign.started` webhook event.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Campaign started
+        '400':
+          description: Campaign cannot be started (no leads, no workflow, or already active)
 
   /public/campaigns/{id}/pause:
     post:
       operationId: pauseCampaign
       summary: Pause campaign
+      description: |
+        Pauses an active campaign. All pending workflow steps are suspended.
+        Triggers a `campaign.paused` webhook event.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Campaign paused
@@ -669,13 +1428,16 @@ paths:
     post:
       operationId: resumeCampaign
       summary: Resume campaign
+      description: Resumes a paused campaign. Workflow steps continue from where they left off.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Campaign resumed
@@ -688,6 +1450,7 @@ paths:
       description: |
         Queues a connection request to be sent via the specified LinkedIn account.
         Returns immediately with a job ID. Use the job status endpoint to check progress.
+        The lead must not already be connected.
       tags: [LinkedIn Actions]
       x-required-scope: write:linkedin_actions
       requestBody:
@@ -697,9 +1460,20 @@ paths:
             schema:
               type: object
               properties:
-                lead_id: { type: string, format: uuid }
-                linkedin_account_id: { type: string, format: uuid }
-                note: { type: string, maxLength: 300, description: Optional connection note }
+                lead_id:
+                  type: string
+                  format: uuid
+                  example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+                linkedin_account_id:
+                  type: string
+                  format: uuid
+                  description: LinkedIn account to send from
+                  example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
+                note:
+                  type: string
+                  maxLength: 300
+                  description: Optional connection note (max 300 chars). LinkedIn may reject requests with notes if you're not premium.
+                  example: "Hi Jane, I noticed your work at Acme — would love to connect!"
               required: [lead_id, linkedin_account_id]
       responses:
         '202':
@@ -709,13 +1483,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/AsyncJob' }
+                  data:
+                    $ref: '#/components/schemas/AsyncJob'
 
   /public/linkedin/send-message:
     post:
       operationId: sendMessage
       summary: Send LinkedIn message
-      description: Queues a direct message to a connected lead.
+      description: |
+        Queues a direct message to a connected lead. The lead must be a 1st-degree connection.
+        Returns a job ID for status tracking.
       tags: [LinkedIn Actions]
       x-required-scope: write:linkedin_actions
       requestBody:
@@ -725,9 +1502,20 @@ paths:
             schema:
               type: object
               properties:
-                lead_id: { type: string, format: uuid }
-                linkedin_account_id: { type: string, format: uuid }
-                message: { type: string, minLength: 1, maxLength: 8000 }
+                lead_id:
+                  type: string
+                  format: uuid
+                  example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+                linkedin_account_id:
+                  type: string
+                  format: uuid
+                  example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 8000
+                  description: Message text to send
+                  example: "Hi Jane, thanks for connecting! I wanted to share..."
               required: [lead_id, linkedin_account_id, message]
       responses:
         '202':
@@ -737,13 +1525,16 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/AsyncJob' }
+                  data:
+                    $ref: '#/components/schemas/AsyncJob'
 
   /public/linkedin/send-inmail:
     post:
       operationId: sendInMail
       summary: Send LinkedIn InMail
-      description: Queues an InMail message to a lead (requires Sales Navigator).
+      description: |
+        Queues an InMail message to a lead. Requires a Sales Navigator subscription on the sending account.
+        InMails can be sent to leads who are not 1st-degree connections.
       tags: [LinkedIn Actions]
       x-required-scope: write:linkedin_actions
       requestBody:
@@ -753,10 +1544,24 @@ paths:
             schema:
               type: object
               properties:
-                lead_id: { type: string, format: uuid }
-                linkedin_account_id: { type: string, format: uuid }
-                subject: { type: string, maxLength: 200 }
-                message: { type: string, minLength: 1, maxLength: 8000 }
+                lead_id:
+                  type: string
+                  format: uuid
+                  example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+                linkedin_account_id:
+                  type: string
+                  format: uuid
+                  example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
+                subject:
+                  type: string
+                  maxLength: 200
+                  description: InMail subject line
+                  example: Quick question about your team's outreach strategy
+                message:
+                  type: string
+                  minLength: 1
+                  maxLength: 8000
+                  example: "Hi Jane, I came across your profile..."
               required: [lead_id, linkedin_account_id, subject, message]
       responses:
         '202':
@@ -766,7 +1571,9 @@ paths:
     post:
       operationId: viewProfile
       summary: View LinkedIn profile
-      description: Queues a profile view action. Useful for warming up leads before connecting.
+      description: |
+        Queues a profile view action. Useful for warming up leads before sending a connection request.
+        The lead will see your profile in their "Who viewed your profile" section.
       tags: [LinkedIn Actions]
       x-required-scope: write:linkedin_actions
       requestBody:
@@ -776,8 +1583,14 @@ paths:
             schema:
               type: object
               properties:
-                lead_id: { type: string, format: uuid }
-                linkedin_account_id: { type: string, format: uuid }
+                lead_id:
+                  type: string
+                  format: uuid
+                  example: f7e6d5c4-b3a2-1098-7654-321fedcba098
+                linkedin_account_id:
+                  type: string
+                  format: uuid
+                  example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
               required: [lead_id, linkedin_account_id]
       responses:
         '202':
@@ -787,14 +1600,19 @@ paths:
     get:
       operationId: getJobStatus
       summary: Check async job status
-      description: Returns the current status of an async LinkedIn action job.
+      description: |
+        Returns the current status of an async LinkedIn action job.
+        Poll this endpoint to check if your action has completed.
       tags: [LinkedIn Actions]
       x-required-scope: read:leads
       parameters:
         - name: job_id
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+          description: Job ID returned from the action endpoint
+          example: 'linkedin-action:f7e6d5c4-b3a2-1098'
       responses:
         '200':
           description: Job status
@@ -803,13 +1621,17 @@ paths:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/AsyncJob' }
+                  data:
+                    $ref: '#/components/schemas/AsyncJob'
+        '404':
+          description: Job not found or expired
 
   # ============ CONVERSATIONS ============
   /public/conversations:
     get:
       operationId: listConversations
       summary: List conversations
+      description: Returns LinkedIn conversations for your workspace with optional filters.
       tags: [Conversations]
       x-required-scope: read:conversations
       parameters:
@@ -817,13 +1639,22 @@ paths:
         - $ref: '#/components/parameters/offsetParam'
         - name: linkedin_account_id
           in: query
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
+          description: Filter by LinkedIn account
         - name: has_unread
           in: query
-          schema: { type: boolean }
+          schema:
+            type: boolean
+          description: Filter for conversations with unread messages
+          example: true
         - name: lead_id
           in: query
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
+          description: Filter conversations for a specific lead
       responses:
         '200':
           description: Conversation list
@@ -832,36 +1663,62 @@ paths:
     get:
       operationId: getConversation
       summary: Get conversation with messages
+      description: Returns a conversation thread including paginated messages.
       tags: [Conversations]
       x-required-scope: read:conversations
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
         - name: message_limit
           in: query
-          schema: { type: integer, default: 50 }
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Number of messages to return
         - name: message_offset
           in: query
-          schema: { type: integer, default: 0 }
+          schema:
+            type: integer
+            default: 0
+          description: Message pagination offset
       responses:
         '200':
           description: Conversation with messages
+        '404':
+          description: Conversation not found
 
   # ============ LEAD GROUPS ============
   /public/lead-groups:
     get:
       operationId: listLeadGroups
       summary: List lead groups
+      description: Returns all lead groups in your workspace.
       tags: [Lead Groups]
       x-required-scope: read:leads
       responses:
         '200':
           description: Lead group list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LeadGroup'
+                  message:
+                    type: string
+                    example: Success
     post:
       operationId: createLeadGroup
       summary: Create lead group
+      description: Creates a new lead group for organizing leads.
       tags: [Lead Groups]
       x-required-scope: write:leads
       requestBody:
@@ -871,8 +1728,13 @@ paths:
             schema:
               type: object
               properties:
-                name: { type: string }
-                description: { type: string }
+                name:
+                  type: string
+                  description: Group name (must be unique within workspace)
+                  example: Enterprise Prospects
+                description:
+                  type: string
+                  example: Leads from Q1 enterprise campaign
               required: [name]
       responses:
         '201':
@@ -882,13 +1744,16 @@ paths:
     post:
       operationId: addLeadsToGroup
       summary: Add leads to group
+      description: Add one or more existing leads to a lead group. Already-present leads are silently skipped.
       tags: [Lead Groups]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -898,21 +1763,27 @@ paths:
               properties:
                 lead_ids:
                   type: array
-                  items: { type: string, format: uuid }
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["f7e6d5c4-b3a2-1098-7654-321fedcba098"]
               required: [lead_ids]
       responses:
         '200':
-          description: Leads added
+          description: Leads added to group
     delete:
       operationId: removeLeadsFromGroup
       summary: Remove leads from group
+      description: Remove leads from a group. The leads themselves are not deleted.
       tags: [Lead Groups]
       x-required-scope: write:leads
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
@@ -922,18 +1793,23 @@ paths:
               properties:
                 lead_ids:
                   type: array
-                  items: { type: string, format: uuid }
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["f7e6d5c4-b3a2-1098-7654-321fedcba098"]
               required: [lead_ids]
       responses:
         '200':
-          description: Leads removed
+          description: Leads removed from group
 
   # ============ LINKEDIN ACCOUNTS ============
   /public/linkedin-accounts:
     get:
       operationId: listLinkedInAccounts
       summary: List LinkedIn accounts
-      description: Returns safe fields only. Sensitive data like cookies are never exposed.
+      description: |
+        Returns connected LinkedIn accounts with health metrics and daily usage.
+        Sensitive data like cookies and credentials are never exposed.
       tags: [LinkedIn Accounts]
       x-required-scope: read:accounts
       responses:
@@ -946,22 +1822,38 @@ paths:
                 properties:
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/LinkedInAccount' }
+                    items:
+                      $ref: '#/components/schemas/LinkedInAccount'
+                  message:
+                    type: string
+                    example: Success
 
   /public/linkedin-accounts/{id}:
     get:
       operationId: getLinkedInAccount
       summary: Get LinkedIn account details
+      description: Returns detailed info for a single LinkedIn account.
       tags: [LinkedIn Accounts]
       x-required-scope: read:accounts
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Account details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LinkedInAccount'
+        '404':
+          description: Account not found
 
   # ============ ANALYTICS ============
   /public/analytics/overview:
@@ -974,7 +1866,15 @@ paths:
       parameters:
         - name: period
           in: query
-          schema: { type: string, enum: ['7d', '30d', '90d'], default: '30d' }
+          schema:
+            type: string
+            enum: ['7d', '30d', '90d']
+            default: '30d'
+          description: |
+            Time period for analytics:
+            - `7d` — Last 7 days
+            - `30d` — Last 30 days
+            - `90d` — Last 90 days
       responses:
         '200':
           description: Analytics overview
@@ -983,13 +1883,16 @@ paths:
     get:
       operationId: getCampaignAnalytics
       summary: Campaign analytics
+      description: Returns detailed performance analytics for a specific campaign.
       tags: [Analytics]
       x-required-scope: read:analytics
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Campaign analytics
@@ -999,19 +1902,26 @@ paths:
     get:
       operationId: listWebhookEventTypes
       summary: List available webhook event types
-      description: Returns all webhook event types grouped by category.
+      description: |
+        Returns all webhook event types grouped by category.
+        Use these event type strings when creating or updating webhooks.
       tags: [Webhook Events]
       responses:
         '200':
           description: Event types grouped by category
 
   # ============ WEBHOOK MANAGEMENT ============
+  # NOTE: These endpoints use JWT authentication (dashboard session), NOT API key auth.
+  # They are used by the Cold Navigator dashboard, not by external integrations.
   /webhooks:
     get:
       operationId: listWebhooks
       summary: List webhooks
-      description: List all webhooks for your workspace. Requires owner or admin role.
+      description: |
+        List all webhooks for your workspace.
+        **Authentication:** Requires dashboard session (JWT), not API key.
       tags: [Webhook Management]
+      security: []
       responses:
         '200':
           description: Webhook list
@@ -1022,14 +1932,17 @@ paths:
                 properties:
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/Webhook' }
+                    items:
+                      $ref: '#/components/schemas/Webhook'
     post:
       operationId: createWebhook
       summary: Create webhook
       description: |
-        Creates a new webhook. A secret key is auto-generated if not provided.
-        The secret key is included in the response — store it securely for signature verification.
+        Creates a new webhook. A secret key is auto-generated for signature verification.
+        The secret key is included in the response — **store it securely, it is only shown once**.
+        **Authentication:** Requires dashboard session (JWT), not API key.
       tags: [Webhook Management]
+      security: []
       requestBody:
         required: true
         content:
@@ -1037,66 +1950,144 @@ paths:
             schema:
               type: object
               properties:
-                name: { type: string, maxLength: 100 }
-                url: { type: string, format: uri, maxLength: 2000 }
+                name:
+                  type: string
+                  maxLength: 100
+                  example: CRM Sync
+                url:
+                  type: string
+                  format: uri
+                  maxLength: 2000
+                  description: HTTPS endpoint URL that will receive webhook deliveries
+                  example: https://your-app.com/webhooks/cold-navigator
                 event_types:
                   type: array
-                  items: { type: string }
                   minItems: 1
-                secret_key: { type: string, maxLength: 255 }
-                description: { type: string, maxLength: 500 }
-                headers: { type: object }
+                  description: Event types to subscribe to
+                  items:
+                    type: string
+                    enum:
+                      - lead.created
+                      - lead.updated
+                      - lead.status_changed
+                      - lead.replied
+                      - lead.connected
+                      - campaign.started
+                      - campaign.completed
+                      - campaign.paused
+                      - campaign.error
+                      - message.sent
+                      - message.received
+                      - connection.sent
+                      - connection.accepted
+                      - workflow.step_completed
+                      - workflow.lead_finished
+                      - account.disconnected
+                      - account.rate_limited
+                  example: ["lead.replied", "lead.connected"]
+                secret_key:
+                  type: string
+                  maxLength: 255
+                  description: Optional custom secret key. If not provided, one is auto-generated (recommended).
+                description:
+                  type: string
+                  maxLength: 500
+                  example: Sends lead replies to our CRM
+                headers:
+                  type: object
+                  description: Custom HTTP headers to include with every delivery
+                  example: { "X-Source": "cold-navigator" }
               required: [name, url, event_types]
       responses:
         '201':
-          description: Webhook created (includes secret_key)
+          description: Webhook created (response includes secret_key)
 
   /webhooks/{id}:
     get:
       operationId: getWebhook
       summary: Get webhook with recent deliveries
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Webhook details with recent deliveries
     put:
       operationId: updateWebhook
       summary: Update webhook
+      description: Update webhook configuration. Only include fields you want to change.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                name: { type: string, maxLength: 100 }
-                url: { type: string, format: uri }
-                event_types: { type: array, items: { type: string } }
-                is_active: { type: boolean }
-                description: { type: string }
-                headers: { type: object }
+                name:
+                  type: string
+                  maxLength: 100
+                url:
+                  type: string
+                  format: uri
+                event_types:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - lead.created
+                      - lead.updated
+                      - lead.status_changed
+                      - lead.replied
+                      - lead.connected
+                      - campaign.started
+                      - campaign.completed
+                      - campaign.paused
+                      - campaign.error
+                      - message.sent
+                      - message.received
+                      - connection.sent
+                      - connection.accepted
+                      - workflow.step_completed
+                      - workflow.lead_finished
+                      - account.disconnected
+                      - account.rate_limited
+                is_active:
+                  type: boolean
+                  description: Set to false to disable, true to re-enable
+                description:
+                  type: string
+                headers:
+                  type: object
       responses:
         '200':
           description: Webhook updated
     delete:
       operationId: deleteWebhook
       summary: Delete webhook
+      description: Permanently deletes the webhook and all delivery history.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: Webhook deleted
@@ -1105,35 +2096,48 @@ paths:
     patch:
       operationId: rotateWebhookSecret
       summary: Rotate webhook secret key
-      description: Generates a new secret key. The old key is immediately invalidated.
+      description: |
+        Generates a new secret key. The old key is immediately invalidated.
+        Update your server with the new secret right away.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
-          description: New secret key
+          description: New secret key returned
 
   /webhooks/{id}/test:
     post:
       operationId: testWebhook
       summary: Send test event
-      description: Sends a test payload to the webhook URL synchronously and returns the result.
+      description: |
+        Sends a `webhook.test` event to the webhook URL synchronously and returns the delivery result.
+        Useful for verifying your endpoint is reachable and correctly configured.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                event_type: { type: string, default: 'webhook.test' }
+                event_type:
+                  type: string
+                  default: webhook.test
+                  description: Always sends a test event regardless of this value
       responses:
         '200':
           description: Test delivery result
@@ -1142,35 +2146,60 @@ paths:
     get:
       operationId: listWebhookDeliveries
       summary: List webhook deliveries
+      description: Returns recent delivery attempts for a webhook with filtering options.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
         - name: status
           in: query
-          schema: { type: string, enum: [pending, success, failed, dead_letter] }
+          schema:
+            type: string
+            enum: [pending, success, failed, dead_letter]
+          description: Filter by delivery status
         - name: limit
           in: query
-          schema: { type: integer, default: 50 }
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
         - name: offset
           in: query
-          schema: { type: integer, default: 0 }
+          schema:
+            type: integer
+            default: 0
       responses:
         '200':
           description: Delivery list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WebhookDelivery'
 
   /webhooks/{id}/retry:
     post:
       operationId: retryWebhookDeliveries
       summary: Retry failed deliveries
+      description: Re-queues failed deliveries for another attempt.
       tags: [Webhook Management]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
@@ -1179,19 +2208,25 @@ paths:
               properties:
                 delivery_ids:
                   type: array
-                  items: { type: string, format: uuid }
-                  description: Specific deliveries to retry. If empty, retries all failed.
+                  items:
+                    type: string
+                    format: uuid
+                  description: Specific delivery IDs to retry. If empty, retries all recent failed deliveries.
       responses:
         '200':
           description: Retry result
 
   # ============ API KEYS ============
+  # NOTE: These endpoints use JWT authentication (dashboard session), NOT API key auth.
   /api-keys:
     get:
       operationId: listApiKeys
       summary: List API keys
-      description: Returns all API keys for your workspace (without the key hash).
+      description: |
+        Returns all API keys for your workspace. The full key hash is never returned — only the prefix for identification.
+        **Authentication:** Requires dashboard session (JWT), not API key.
       tags: [API Keys]
+      security: []
       responses:
         '200':
           description: API key list
@@ -1202,14 +2237,17 @@ paths:
                 properties:
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/ApiKey' }
+                    items:
+                      $ref: '#/components/schemas/ApiKey'
     post:
       operationId: createApiKey
       summary: Create API key
       description: |
-        Creates a new API key. The full key is returned only in this response.
-        **Store it securely — it cannot be retrieved again.**
+        Creates a new API key. The full key is returned **only in this response** — store it securely.
+        It cannot be retrieved again.
+        **Authentication:** Requires dashboard session (JWT), not API key.
       tags: [API Keys]
+      security: []
       requestBody:
         required: true
         content:
@@ -1217,58 +2255,102 @@ paths:
             schema:
               type: object
               properties:
-                name: { type: string, maxLength: 100 }
+                name:
+                  type: string
+                  maxLength: 100
+                  description: Descriptive name for this key
+                  example: CRM Integration
                 scopes:
                   type: array
-                  items: { type: string }
                   minItems: 1
                   description: |
-                    Available scopes: read:leads, write:leads, read:campaigns, write:campaigns,
-                    read:conversations, read:accounts, read:analytics, write:linkedin_actions, *
-                expires_at: { type: string, format: date-time }
+                    Permissions to grant. Use the narrowest scopes possible.
+                  items:
+                    type: string
+                    enum:
+                      - 'read:leads'
+                      - 'write:leads'
+                      - 'read:campaigns'
+                      - 'write:campaigns'
+                      - 'read:conversations'
+                      - 'read:accounts'
+                      - 'read:analytics'
+                      - 'write:linkedin_actions'
+                      - '*'
+                  example: ["read:leads", "write:leads"]
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Optional expiration date. Null or omitted means never expires.
+                  example: '2027-01-01T00:00:00Z'
               required: [name, scopes]
       responses:
         '201':
-          description: API key created (includes full key)
+          description: API key created (includes full key — save it now!)
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  data: { $ref: '#/components/schemas/ApiKeyCreated' }
+                  data:
+                    $ref: '#/components/schemas/ApiKeyCreated'
 
   /api-keys/{id}:
     put:
       operationId: updateApiKey
       summary: Update API key
+      description: Update the name, scopes, or active status of an API key.
       tags: [API Keys]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                name: { type: string }
-                scopes: { type: array, items: { type: string } }
-                is_active: { type: boolean }
+                name:
+                  type: string
+                  example: Updated Key Name
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - 'read:leads'
+                      - 'write:leads'
+                      - 'read:campaigns'
+                      - 'write:campaigns'
+                      - 'read:conversations'
+                      - 'read:accounts'
+                      - 'read:analytics'
+                      - 'write:linkedin_actions'
+                      - '*'
+                is_active:
+                  type: boolean
+                  description: Set to false to revoke, true to re-enable
       responses:
         '200':
           description: API key updated
     delete:
       operationId: revokeApiKey
       summary: Revoke API key
-      description: Permanently deactivates the API key. This action cannot be undone.
+      description: Permanently deactivates the API key. This action cannot be undone. Any requests using this key will receive 401.
       tags: [API Keys]
+      security: []
       parameters:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          schema:
+            type: string
+            format: uuid
       responses:
         '204':
           description: API key revoked
