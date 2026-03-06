@@ -23,7 +23,7 @@ Failed deliveries are retried up to **5 times** with increasing delays:
 After all 5 attempts fail, the delivery is marked as **failed** and no further retries are made for that specific event.
 
 <Note>
-  Each retry uses the same `event_id` but a different `X-Webhook-Delivery` header value. This lets you distinguish between the original delivery and retries while still deduplicating by event.
+  Each retry uses the same `id` (event ID) but a different `X-Webhook-Delivery` header value. This lets you distinguish between the original delivery and retries while still deduplicating by event.
 </Note>
 
 ## What counts as a failure
@@ -31,9 +31,8 @@ After all 5 attempts fail, the delivery is marked as **failed** and no further r
 A delivery is considered failed if any of the following occur:
 
 - Your endpoint returns a **non-2xx HTTP status code** (3xx, 4xx, 5xx)
-- Your endpoint does not respond within **15 seconds** (timeout)
+- Your endpoint does not respond within **10 seconds** (timeout)
 - The connection to your endpoint **cannot be established** (DNS failure, connection refused, TLS error)
-- The response body exceeds **1 MB** (the response is discarded but the status code is still evaluated)
 
 <Warning>
   HTTP redirects (301, 302, 307, 308) are **not followed** and count as failures. Make sure your webhook URL points directly to the final endpoint.
@@ -56,8 +55,8 @@ When a webhook is auto-disabled:
 
 - The webhook status changes to `disabled`
 - No further deliveries are attempted for any events
-- An email notification is sent to the workspace owner
-- An `account.webhook_disabled` internal alert is logged in the dashboard
+- A notification is sent to the webhook creator in the Cold Navigator dashboard
+- The webhook shows a red "Disabled" badge in **Settings > Webhooks**
 
 <Note>
   The consecutive failure counter resets to zero whenever a delivery succeeds. A single successful delivery prevents auto-disabling.
@@ -65,22 +64,11 @@ When a webhook is auto-disabled:
 
 ## Re-enabling a disabled webhook
 
-### Via the dashboard
-
-1. Go to **Settings > Webhooks**
+1. Go to **Settings > Webhooks** in your Cold Navigator dashboard
 2. Find the disabled webhook (shown with a red "Disabled" badge)
 3. Verify that your endpoint is operational
 4. Click **Enable**
 5. Optionally click **Send Test** to confirm the endpoint works before enabling
-
-### Via the API
-
-```bash
-curl -X PATCH https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123 \
-  -H "x-api-key: your_api_key" \
-  -H "Content-Type: application/json" \
-  -d '{ "active": true }'
-```
 
 <Warning>
   Fix the underlying issue before re-enabling. If the endpoint is still failing, the webhook will be auto-disabled again after 5 more consecutive failures.
@@ -88,51 +76,26 @@ curl -X PATCH https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123 \
 
 ## Viewing delivery history
 
-You can inspect recent deliveries and their status through the API:
+You can inspect recent deliveries and their status in the Cold Navigator dashboard:
 
-```bash
-curl https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/deliveries?limit=20 \
-  -H "x-api-key: your_api_key"
-```
+1. Go to **Settings > Webhooks**
+2. Click on the webhook you want to inspect
+3. View the **Deliveries** tab to see recent delivery attempts
 
-Each delivery record includes:
+Each delivery record shows:
 
-```json
-{
-  "data": [
-    {
-      "id": "dlv_01JNQV8X3KZWY9MPGH2T4B6R5F",
-      "event_id": "evt_ld_01JNQV8X3KZWY9MPGH2T4B6R5D",
-      "event_type": "lead.replied",
-      "status": "failed",
-      "http_status": 500,
-      "attempt": 3,
-      "response_time_ms": 2340,
-      "next_retry_at": "2026-03-06T15:00:00.000Z",
-      "created_at": "2026-03-06T14:30:00.000Z"
-    }
-  ]
-}
-```
-
-## Retrying failed deliveries manually
-
-You can manually retry all failed deliveries for a webhook:
-
-```bash
-curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/deliveries/retry \
-  -H "x-api-key: your_api_key" \
-  -H "Content-Type: application/json" \
-  -d '{ "since": "2026-03-06T00:00:00Z" }'
-```
-
-This re-queues all failed deliveries from the specified time. Each retried delivery gets a new `X-Webhook-Delivery` ID but retains the original `event_id`.
+- **Event type** — e.g., `lead.replied`, `campaign.completed`
+- **Status** — `success`, `failed`, or `dead_letter` (all retries exhausted)
+- **HTTP status** — The response status code from your endpoint (e.g., 200, 500)
+- **Duration** — How long the request took in milliseconds
+- **Attempt** — Which attempt number this was (1-5)
+- **Timestamp** — When the delivery was attempted
 
 ## Troubleshooting
 
 <Accordion title="Webhook receives no deliveries at all">
   **Check these items:**
-  - Is the webhook **active**? Check status in Settings > Webhooks or via the API.
+  - Is the webhook **active**? Check status in **Settings > Webhooks**.
   - Is the URL correct? Verify there are no typos, trailing slashes, or port issues.
   - Are the right **events selected**? The webhook only fires for subscribed event types.
   - Is HTTPS configured correctly? Self-signed certificates are not accepted. Use a certificate from a trusted CA.
@@ -141,13 +104,13 @@ This re-queues all failed deliveries from the specified time. Each retried deliv
 
 <Accordion title="Deliveries are failing with 401/403 errors">
   **Your endpoint is rejecting the requests.** Common causes:
-  - Signature verification is failing due to a wrong or stale webhook secret. Try [rotating the secret](/api-reference/webhooks/rotate-secret) and updating your server.
+  - Signature verification is failing due to a wrong or stale webhook secret. Try rotating the secret from **Settings > Webhooks** (click the webhook, then **Rotate Secret**) and updating your server.
   - Your server has IP allowlisting enabled. Cold Navigator delivers from dynamic IP addresses -- use signature verification instead of IP filtering.
   - An authentication middleware is intercepting the webhook endpoint. Ensure the webhook path is excluded from auth checks.
 </Accordion>
 
 <Accordion title="Deliveries are failing with timeout errors">
-  **Your endpoint is taking more than 15 seconds to respond.** Solutions:
+  **Your endpoint is taking more than 10 seconds to respond.** Solutions:
   - Return `202 Accepted` immediately and process the event asynchronously using a job queue (BullMQ, Celery, Sidekiq, etc.).
   - Check if your server has cold-start latency (common with serverless functions). Configure provisioned concurrency or a keep-alive mechanism.
   - Reduce the processing done in the webhook handler. Avoid making external API calls synchronously during webhook handling.
@@ -155,17 +118,17 @@ This re-queues all failed deliveries from the specified time. Each retried deliv
 
 <Accordion title="Receiving duplicate events">
   **This is expected behavior in distributed systems.** In rare cases (network issues, timeouts where your server processed the event but Cold Navigator did not receive the response), the same event may be delivered more than once.
-  - Use the `event_id` field to deduplicate. Store processed event IDs in a database or cache (Redis SET with a 24-hour TTL works well).
+  - Use the `id` field (event ID) to deduplicate. Store processed event IDs in a database or cache (Redis SET with a 24-hour TTL works well).
   - Make your webhook handler idempotent -- processing the same event twice should produce the same result.
 </Accordion>
 
 <Accordion title="Webhook was auto-disabled unexpectedly">
   **Five consecutive deliveries failed.** To diagnose:
-  1. Check the delivery history: `GET /api/v1/public/webhooks/{id}/deliveries`
-  2. Look at the `http_status` and `response_time_ms` for each failed delivery
+  1. Open the webhook in **Settings > Webhooks** and check the **Deliveries** tab
+  2. Look at the HTTP status and duration for each failed delivery
   3. Common patterns:
      - All `500` errors: Your server is crashing or returning errors. Check server logs.
-     - All timeouts (`http_status: null`): Your endpoint is too slow. Process events asynchronously.
+     - All timeouts (no HTTP status): Your endpoint is too slow. Process events asynchronously.
      - All connection errors: Your server was down or unreachable during that period.
   4. Fix the issue, then re-enable the webhook.
 </Accordion>
@@ -173,7 +136,7 @@ This re-queues all failed deliveries from the specified time. Each retried deliv
 <Accordion title="Events are missing or arriving out of order">
   **Webhooks are delivered in near real-time but order is not guaranteed.**
   - Events are dispatched independently and may arrive out of chronological order, especially during retries.
-  - Use the `timestamp` field in the payload to determine the actual event order.
+  - Use the `created_at` field in the payload to determine the actual event order.
   - If you need strict ordering, buffer incoming events and sort by timestamp before processing.
   - If events appear to be missing, check if the webhook is subscribed to those event types.
 </Accordion>

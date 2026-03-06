@@ -1,16 +1,12 @@
 ---
 title: "Event Types"
-description: "Complete reference of all 18 webhook event types with example payloads for each category."
+description: "Complete reference of all webhook event types with example payloads for each category."
 icon: "list"
 ---
 
 # Event Types
 
-Cold Navigator supports 18 webhook event types organized into 6 categories. When creating or updating a webhook, specify event types using the dot-notation names listed below.
-
-<Note>
-  You can subscribe to individual events or use a wildcard to receive all events in a category. For example, `lead.*` subscribes to all lead events.
-</Note>
+Cold Navigator supports webhook event types organized into 6 categories. When creating or updating a webhook, specify event types using the dot-notation names listed below.
 
 ## Summary
 
@@ -46,7 +42,7 @@ Fired when a new lead is added to your workspace, whether through the UI, API, C
 
 ### lead.updated
 
-Fired when a lead's profile fields are modified (name, company, title, custom fields, tags, etc.).
+Fired when a lead's profile fields are modified (name, company, position, custom fields, tags, etc.).
 
 ### lead.status_changed
 
@@ -63,10 +59,11 @@ Fired when a lead accepts your LinkedIn connection request.
 <Accordion title="Example lead event payload">
 ```json
 {
-  "event_id": "evt_ld_01JNQV8X3KZWY9MPGH2T4B6R5D",
-  "event_type": "lead.replied",
+  "id": "evt_m3k9x2p7_a1b2c3d4e5f6g7h8",
+  "event": "lead.replied",
+  "created_at": "2026-03-06T14:23:17.482Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T14:23:17.482Z",
   "data": {
     "lead": {
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
@@ -76,7 +73,6 @@ Fired when a lead accepts your LinkedIn connection request.
       "position": "VP of Engineering",
       "company": "Acme Corp",
       "status": "replied",
-      "previous_status": "contacted",
       "tags": ["enterprise", "inbound-interest"]
     },
     "campaign": {
@@ -84,13 +80,7 @@ Fired when a lead accepts your LinkedIn connection request.
       "name": "Q1 Enterprise Outreach"
     },
     "message": {
-      "id": "msg_01JNQV8X3KZWY9MPGH2T4B6R5E",
-      "text": "Hi, thanks for reaching out. I'd be happy to schedule a call next week.",
-      "received_at": "2026-03-06T14:23:15.000Z"
-    },
-    "linkedin_account": {
-      "id": "la_abc123",
-      "name": "John Sales"
+      "text": "Hi, thanks for reaching out. I'd be happy to schedule a call next week."
     }
   }
 }
@@ -122,10 +112,11 @@ Fired when a campaign encounters a critical error and cannot continue executing.
 <Accordion title="Example campaign event payload">
 ```json
 {
-  "event_id": "evt_cp_01JNQW2M7RPNT5FXGH8K9D3V6A",
-  "event_type": "campaign.completed",
+  "id": "evt_m3l2n4p8_b2c3d4e5f6g7h8i9",
+  "event": "campaign.completed",
+  "created_at": "2026-03-06T18:45:02.119Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T18:45:02.119Z",
   "data": {
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
@@ -164,16 +155,15 @@ Fired when an inbound message is received from any LinkedIn connection. This dif
 <Accordion title="Example message event payload">
 ```json
 {
-  "event_id": "evt_ms_01JNQX6P2DKVY4ANWJ7T8F9H3B",
-  "event_type": "message.sent",
+  "id": "evt_m3m5o7q9_c3d4e5f6g7h8i9j0",
+  "event": "message.sent",
+  "created_at": "2026-03-06T09:12:33.741Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T09:12:33.741Z",
   "data": {
     "message": {
-      "id": "msg_01JNQX6P2DKVY4ANWJ7T8F9H3C",
       "type": "regular",
-      "text": "Hi Sarah, I noticed your work on distributed systems at Acme. Would love to connect and share how we're helping engineering teams...",
-      "sent_at": "2026-03-06T09:12:31.000Z"
+      "text": "Hi Sarah, I noticed your work on distributed systems at Acme. Would love to connect and share how we're helping engineering teams..."
     },
     "lead": {
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
@@ -184,14 +174,6 @@ Fired when an inbound message is received from any LinkedIn connection. This dif
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
-    },
-    "workflow_step": {
-      "order": 2,
-      "type": "send_message"
-    },
-    "linkedin_account": {
-      "id": "la_abc123",
-      "name": "John Sales"
     }
   }
 }
@@ -215,10 +197,11 @@ Fired when a lead accepts your connection request. This is the same underlying e
 <Accordion title="Example connection event payload">
 ```json
 {
-  "event_id": "evt_cn_01JNQY9R5GMPW8BXKL2T6D4J7F",
-  "event_type": "connection.accepted",
+  "id": "evt_m3n8p0r2_d4e5f6g7h8i9j0k1",
+  "event": "connection.accepted",
+  "created_at": "2026-03-06T11:30:45.893Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T11:30:45.893Z",
   "data": {
     "lead": {
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
@@ -236,10 +219,6 @@ Fired when a lead accepts your connection request. This is the same underlying e
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
-    },
-    "linkedin_account": {
-      "id": "la_abc123",
-      "name": "John Sales"
     }
   }
 }
@@ -263,10 +242,11 @@ Fired when a lead has completed all steps in the workflow and exits the campaign
 <Accordion title="Example workflow event payload">
 ```json
 {
-  "event_id": "evt_wf_01JNQZ3T8KNRX2CYLM5V7G9P4H",
-  "event_type": "workflow.step_completed",
+  "id": "evt_m3o1q3s5_e5f6g7h8i9j0k1l2",
+  "event": "workflow.step_completed",
+  "created_at": "2026-03-06T16:05:22.317Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T16:05:22.317Z",
   "data": {
     "lead": {
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
@@ -279,18 +259,8 @@ Fired when a lead has completed all steps in the workflow and exits the campaign
       "name": "Q1 Enterprise Outreach"
     },
     "workflow_step": {
-      "order": 3,
       "type": "send_message",
       "label": "Follow-up message"
-    },
-    "workflow_progress": {
-      "completed_steps": 3,
-      "total_steps": 5,
-      "next_step": {
-        "order": 4,
-        "type": "wait",
-        "config": { "days": 3 }
-      }
     }
   }
 }
@@ -314,15 +284,15 @@ Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator autom
 <Accordion title="Example account event payload">
 ```json
 {
-  "event_id": "evt_ac_01JNR04V9LPTM3DZNQ6W8H2K5J",
-  "event_type": "account.disconnected",
+  "id": "evt_m3p4r6t8_f6g7h8i9j0k1l2m3",
+  "event": "account.disconnected",
+  "created_at": "2026-03-06T03:17:44.651Z",
+  "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "timestamp": "2026-03-06T03:17:44.651Z",
   "data": {
     "linkedin_account": {
-      "id": "la_abc123",
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
       "name": "John Sales",
-      "linkedin_url": "https://www.linkedin.com/in/johnsales",
       "status": "disconnected",
       "previous_status": "connected",
       "disconnected_at": "2026-03-06T03:17:40.000Z"

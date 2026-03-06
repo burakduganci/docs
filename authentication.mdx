@@ -113,7 +113,7 @@ When you exceed the rate limit, the API returns a `429 Too Many Requests` respon
 ```json
 {
   "error": {
-    "message": "Rate limit exceeded. Please retry after 2026-03-06T10:40:00Z.",
+    "message": "Rate limit exceeded. Please slow down your requests.",
     "code": "RATE_LIMIT_EXCEEDED"
   }
 }
@@ -170,7 +170,7 @@ Solution: Create a new API key with the required scope, or update the existing k
 ```json
 {
   "error": {
-    "message": "Rate limit exceeded. Please retry after 2026-03-06T10:40:00Z.",
+    "message": "Rate limit exceeded. Please slow down your requests.",
     "code": "RATE_LIMIT_EXCEEDED"
   }
 }
@@ -187,7 +187,7 @@ All API responses follow a consistent format.
 ```json
 {
   "data": {
-    "id": "lead_abc123",
+    "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
     "first_name": "Jane",
     "last_name": "Smith"
   },

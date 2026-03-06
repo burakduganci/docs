@@ -18,7 +18,7 @@ Webhooks let your application receive real-time notifications when events happen
     Choose from 18 event types across leads, campaigns, messages, connections, workflows, and accounts. Subscribe only to the events you need.
   </Step>
   <Step title="Receive HTTP POST requests">
-    When a subscribed event occurs, Cold Navigator sends a JSON payload to your endpoint via HTTP POST. Your server should respond with a `2xx` status code within 15 seconds.
+    When a subscribed event occurs, Cold Navigator sends a JSON payload to your endpoint via HTTP POST. Your server should respond with a `2xx` status code within 10 seconds.
   </Step>
   <Step title="Verify the signature">
     Each delivery includes an `X-Webhook-Signature` header. Use your webhook secret to [verify the signature](/webhooks/signature-verification) and confirm the request came from Cold Navigator.
@@ -51,7 +51,7 @@ Event occurs in Cold Navigator
 ```
 
 <Note>
-  Cold Navigator waits up to **15 seconds** for your endpoint to respond. If your processing takes longer, return a `202 Accepted` immediately and handle the event asynchronously.
+  Cold Navigator waits up to **10 seconds** for your endpoint to respond. If your processing takes longer, return a `202 Accepted` immediately and handle the event asynchronously.
 </Note>
 
 ## Setting up a webhook
@@ -65,52 +65,13 @@ Event occurs in Cold Navigator
 5. Copy the signing secret and store it securely
 6. Click **Save**
 
-### Via the API
-
-```bash
-curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
-  -H "x-api-key: your_api_key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://your-app.com/webhooks/cold-navigator",
-    "events": ["lead.replied", "connection.accepted", "campaign.completed"],
-    "description": "Production webhook"
-  }'
-```
-
-The response includes your signing secret:
-
-```json
-{
-  "data": {
-    "id": "wh_abc123",
-    "url": "https://your-app.com/webhooks/cold-navigator",
-    "events": ["lead.replied", "connection.accepted", "campaign.completed"],
-    "secret": "whsec_your_signing_secret_here",
-    "active": true,
-    "created_at": "2026-03-06T10:00:00Z"
-  }
-}
-```
-
-<Warning>
-  The signing secret is only shown once when the webhook is created. Store it immediately. If you lose it, use the [rotate secret](/api-reference/webhooks/rotate-secret) endpoint to generate a new one.
-</Warning>
-
 ## Testing your webhook
 
-Before going live, you can send a test delivery to verify your endpoint works:
+After creating a webhook, click the **Test** button in **Settings > Webhooks**. This sends a sample payload with realistic test data (including a sample lead object) to your endpoint.
 
-```bash
-curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/test \
-  -H "x-api-key: your_api_key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "event_type": "lead.replied"
-  }'
-```
-
-This sends a sample payload with realistic test data to your endpoint.
+<Warning>
+  The secret key is only shown once when the webhook is created. Store it immediately. If you lose it, use the **Rotate Secret** button in the webhook settings to generate a new one.
+</Warning>
 
 ## Integration platform compatibility
 
@@ -135,9 +96,9 @@ Cold Navigator webhooks work out of the box with popular automation platforms:
 ## Requirements for your endpoint
 
 - **HTTPS** is required for production webhooks (HTTP is allowed for `localhost` during development)
-- Must respond with a **2xx status code** within **15 seconds**
+- Must respond with a **2xx status code** within **10 seconds**
 - Must accept **POST** requests with `Content-Type: application/json`
-- Should be **idempotent** -- the same event may be delivered more than once in rare cases. Use the `event_id` field to deduplicate.
+- Should be **idempotent** -- the same event may be delivered more than once in rare cases. Use the `id` field to deduplicate.
 
 ## Next steps
 

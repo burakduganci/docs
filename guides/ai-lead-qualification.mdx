@@ -34,17 +34,12 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
   <Step title="Set Up a Webhook for lead.replied Events">
     Create a webhook in Cold Navigator that only fires on reply events.
 
-    ```bash
-    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
-      -H "x-api-key: YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "name": "AI Lead Qualification",
-        "url": "YOUR_AUTOMATION_TOOL_WEBHOOK_URL",
-        "events": ["lead.replied"],
-        "active": true
-      }'
-    ```
+    1. Go to **Settings > Webhooks** in your Cold Navigator dashboard
+    2. Click **Create Webhook**
+    3. **Name**: `AI Lead Qualification`
+    4. **URL**: Paste your automation tool's webhook URL
+    5. **Events**: Select only `lead.replied`
+    6. Click **Create**
 
     See the [Make.com](/guides/make-com), [n8n](/guides/n8n), or [Zapier](/guides/zapier) guide for details on getting your automation tool's webhook URL.
   </Step>
@@ -54,20 +49,22 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
 
     ```json
     {
-      "id": "evt_abc123",
-      "event_type": "lead.replied",
-      "timestamp": "2026-03-06T14:30:00Z",
+      "id": "evt_m3k9x2p7_a1b2c3d4e5f6g7h8",
+      "event": "lead.replied",
+      "created_at": "2026-03-06T14:30:00Z",
+      "api_version": "2026-03-01",
+      "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "data": {
         "lead": {
-          "id": "lead_xyz789",
+          "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
           "first_name": "Sarah",
           "last_name": "Johnson",
           "company": "Acme Corp",
           "position": "VP of Sales",
-          "linkedin_url": "https://linkedin.com/in/sarahjohnson"
+          "linkedin_url": "https://www.linkedin.com/in/sarahjohnson"
         },
         "campaign": {
-          "id": "camp_456",
+          "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
           "name": "Q1 Enterprise Outreach"
         },
         "message": {

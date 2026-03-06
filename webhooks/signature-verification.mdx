@@ -251,11 +251,13 @@ Always use a constant-time comparison function to compare signatures. Standard s
 
 ### Rotating your webhook secret
 
-If your signing secret is compromised, rotate it immediately using the [rotate secret](/api-reference/webhooks/rotate-secret) endpoint:
+If your signing secret is compromised, rotate it immediately:
 
-```bash
-curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_abc123/rotate-secret \
-  -H "x-api-key: your_api_key"
-```
+1. Go to **Settings > Webhooks** in your Cold Navigator dashboard
+2. Click on the webhook you want to update
+3. Click the **Rotate Secret** button
+4. Copy the new secret and update your server configuration
 
-After rotation, update your server with the new secret. There is no grace period -- the old secret becomes invalid immediately.
+<Warning>
+  After rotation, the old secret becomes invalid immediately. Update your server with the new secret as soon as possible to avoid delivery failures.
+</Warning>

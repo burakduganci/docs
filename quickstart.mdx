@@ -54,8 +54,8 @@ Follow these steps to make your first API call, create a lead, and set up a webh
       "data": {
         "leads": [],
         "total": 0,
-        "page": 1,
-        "per_page": 25
+        "limit": 50,
+        "offset": 0
       },
       "message": "Success"
     }
@@ -66,8 +66,26 @@ Follow these steps to make your first API call, create a lead, and set up a webh
     </Note>
   </Step>
 
+  <Step title="Get a lead group ID">
+    Every lead must belong to a lead group. List your existing groups to get a `lead_group_id`:
+
+    ```bash
+    curl -X GET https://app.coldnavigator.com/api/v1/public/lead-groups \
+      -H "x-api-key: YOUR_API_KEY"
+    ```
+
+    Copy the `id` of the group you want to add leads to. If you don't have one yet, create one:
+
+    ```bash
+    curl -X POST https://app.coldnavigator.com/api/v1/public/lead-groups \
+      -H "x-api-key: YOUR_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{"name": "My First Group"}'
+    ```
+  </Step>
+
   <Step title="Create a lead">
-    Add a new lead to your account by sending a `POST` request with the lead details.
+    Add a new lead by sending a `POST` request with the lead details. `first_name`, `last_name`, `linkedin_url`, and `lead_group_id` are required.
 
     <CodeGroup>
       ```bash cURL
@@ -111,15 +129,16 @@ Follow these steps to make your first API call, create a lead, and set up a webh
     ```json
     {
       "data": {
-        "id": "lead_abc123",
+        "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
         "first_name": "Jane",
         "last_name": "Smith",
         "linkedin_url": "https://www.linkedin.com/in/janesmith",
         "company": "Acme Corp",
         "position": "VP of Sales",
+        "status": "new",
         "created_at": "2026-03-06T10:30:00Z"
       },
-      "message": "Lead created successfully"
+      "message": "Lead created"
     }
     ```
   </Step>
@@ -127,110 +146,43 @@ Follow these steps to make your first API call, create a lead, and set up a webh
   <Step title="Set up a webhook">
     Webhooks let you receive real-time notifications when events happen — like a lead replying to a message or accepting a connection request.
 
-    Register a webhook endpoint by specifying the URL and the events you want to subscribe to.
+    Navigate to **Settings > Webhooks** in the Cold Navigator dashboard and click **Create Webhook**.
 
-    <CodeGroup>
-      ```bash cURL
-      curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
-        -H "x-api-key: YOUR_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d '{
-          "url": "https://your-app.com/webhooks/cold-navigator",
-          "event_types": [
-            "lead.replied",
-            "lead.connection_accepted",
-            "lead.status_changed"
-          ]
-        }'
-      ```
-
-      ```javascript JavaScript
-      const response = await fetch("https://app.coldnavigator.com/api/v1/public/webhooks", {
-        method: "POST",
-        headers: {
-          "x-api-key": "YOUR_API_KEY",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          url: "https://your-app.com/webhooks/cold-navigator",
-          event_types: [
-            "lead.replied",
-            "lead.connection_accepted",
-            "lead.status_changed"
-          ]
-        })
-      });
-
-      const { data } = await response.json();
-      console.log("Webhook ID:", data.id);
-      console.log("Signing secret:", data.signing_secret);
-      ```
-    </CodeGroup>
+    1. **Name**: Give it a descriptive name (e.g., "CRM Sync")
+    2. **URL**: Enter your endpoint URL (e.g., `https://your-app.com/webhooks/cold-navigator`)
+    3. **Events**: Select the events you want to receive (e.g., `lead.replied`, `lead.connected`, `lead.status_changed`)
+    4. Click **Create**
 
     <Warning>
-      Save the `signing_secret` from the response. You will need it to verify that incoming webhook payloads are genuinely from Cold Navigator.
+      Save the **secret key** shown after creation. You will need it to verify that incoming webhook payloads are genuinely from Cold Navigator. See [Signature Verification](/webhooks/signature-verification) for details.
     </Warning>
 
-    The response includes your webhook configuration:
+    Once created, click the **Test** button next to your webhook. Your endpoint will receive a test payload like:
 
     ```json
     {
-      "data": {
-        "id": "wh_xyz789",
-        "url": "https://your-app.com/webhooks/cold-navigator",
-        "event_types": [
-          "lead.replied",
-          "lead.connection_accepted",
-          "lead.status_changed"
-        ],
-        "signing_secret": "whsec_...",
-        "active": true,
-        "created_at": "2026-03-06T10:35:00Z"
-      },
-      "message": "Webhook created successfully"
-    }
-    ```
-  </Step>
-
-  <Step title="Test the webhook">
-    Trigger a test event to make sure your endpoint is receiving payloads correctly.
-
-    <CodeGroup>
-      ```bash cURL
-      curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks/wh_xyz789/test \
-        -H "x-api-key: YOUR_API_KEY"
-      ```
-
-      ```javascript JavaScript
-      const response = await fetch(
-        "https://app.coldnavigator.com/api/v1/public/webhooks/wh_xyz789/test",
-        {
-          method: "POST",
-          headers: {
-            "x-api-key": "YOUR_API_KEY"
-          }
-        }
-      );
-
-      const { data } = await response.json();
-      console.log("Test event sent:", data);
-      ```
-    </CodeGroup>
-
-    Your endpoint will receive a test payload like:
-
-    ```json
-    {
+      "id": "evt_test_abc123",
       "event": "webhook.test",
-      "timestamp": "2026-03-06T10:36:00Z",
+      "created_at": "2026-03-06T10:36:00Z",
+      "api_version": "2026-03-01",
       "data": {
-        "message": "This is a test event from Cold Navigator."
+        "message": "This is a test webhook delivery from Cold Navigator",
+        "lead": {
+          "id": "00000000-0000-0000-0000-000000000000",
+          "first_name": "Test",
+          "last_name": "Lead",
+          "company": "Test Company",
+          "position": "CEO",
+          "email": "test@example.com",
+          "status": "new"
+        },
+        "source": "test"
       }
     }
     ```
 
     <Note>
-      If your endpoint does not respond with a `2xx` status code within 10 seconds, the delivery will be marked as failed. Cold Navigator retries failed deliveries up to 3 times with exponential backoff.
+      If your endpoint does not respond with a `2xx` status code within 10 seconds, the delivery will be marked as failed. Cold Navigator retries failed deliveries up to 5 times with exponential backoff.
     </Note>
   </Step>
 </Steps>
@@ -241,7 +193,7 @@ Follow these steps to make your first API call, create a lead, and set up a webh
   <Card title="Authentication" icon="key" href="/authentication">
     Learn about API key scopes, rate limits, and error handling.
   </Card>
-  <Card title="API Reference" icon="book" href="/api-reference">
-    Explore the full API reference for all available endpoints.
+  <Card title="Webhooks" icon="webhook" href="/webhooks/overview">
+    Dive deeper into webhook events, payload format, and signature verification.
   </Card>
 </CardGroup>

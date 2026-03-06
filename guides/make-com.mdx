@@ -38,19 +38,6 @@ Make.com (formerly Integromat) lets you connect Cold Navigator to thousands of a
     3. **Events**: Select the events you want to receive (e.g., `lead.replied`, `lead.connected`, `campaign.completed`)
     4. Click **Create**
 
-    You can also create the webhook via the API:
-
-    ```bash
-    curl -X POST https://app.coldnavigator.com/api/v1/public/webhooks \
-      -H "x-api-key: YOUR_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "name": "Make.com Integration",
-        "url": "https://hook.us1.make.com/YOUR_WEBHOOK_ID",
-        "events": ["lead.replied", "lead.connected"],
-        "active": true
-      }'
-    ```
   </Step>
 
   <Step title="Test the Connection">
@@ -81,9 +68,9 @@ Make.com (formerly Integromat) lets you connect Cold Navigator to thousands of a
 
     1. Click the **+** after the webhook module
     2. Add a **Router** module
-    3. For each route, set a filter based on the `event_type` field:
-       - Route 1 filter: `event_type` equals `lead.replied`
-       - Route 2 filter: `event_type` equals `lead.connected`
+    3. For each route, set a filter based on the `event` field:
+       - Route 1 filter: `event` equals `lead.replied`
+       - Route 2 filter: `event` equals `lead.connected`
     4. Add action modules to each route
   </Step>
 
@@ -111,7 +98,7 @@ Make.com (formerly Integromat) lets you connect Cold Navigator to thousands of a
        - **Lead Name**: `{{data.lead.first_name}} {{data.lead.last_name}}`
        - **Company**: `{{data.lead.company}}`
        - **Reply**: `{{data.message.text}}`
-       - **Date**: `{{timestamp}}`
+       - **Date**: `{{created_at}}`
        - **Campaign**: `{{data.campaign.name}}`
   </Step>
 </Steps>
@@ -122,20 +109,22 @@ Here is what Cold Navigator sends when a lead replies:
 
 ```json
 {
-  "id": "evt_abc123",
-  "event_type": "lead.replied",
-  "timestamp": "2026-03-06T14:30:00Z",
+  "id": "evt_m3k9x2p7_a1b2c3d4e5f6g7h8",
+  "event": "lead.replied",
+  "created_at": "2026-03-06T14:30:00Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
     "lead": {
-      "id": "lead_xyz789",
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
       "first_name": "Sarah",
       "last_name": "Johnson",
       "company": "Acme Corp",
       "position": "VP of Sales",
-      "linkedin_url": "https://linkedin.com/in/sarahjohnson"
+      "linkedin_url": "https://www.linkedin.com/in/sarahjohnson"
     },
     "campaign": {
-      "id": "camp_456",
+      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
     },
     "message": {
