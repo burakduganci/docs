@@ -276,18 +276,22 @@ paths:
             schema:
               type: object
               properties:
-                linkedin_url: { type: string, format: uri }
-                email: { type: string, format: email }
                 first_name: { type: string }
                 last_name: { type: string }
+                linkedin_url:
+                  type: string
+                  format: uri
+                  description: Must be a valid LinkedIn profile URL (e.g. https://www.linkedin.com/in/username)
+                  pattern: '^https?://(www\.)?linkedin\.com/in/[\w-]+/?$'
+                lead_group_id: { type: string, format: uuid, description: UUID of the lead group to add this lead to }
                 company: { type: string }
                 position: { type: string, description: Job title / position }
                 location: { type: string }
+                email: { type: string, format: email }
                 phone: { type: string }
                 custom_fields: { type: object }
-                lead_group_id: { type: string, format: uuid }
                 tags: { type: array, items: { type: string } }
-              required: [first_name, last_name]
+              required: [first_name, last_name, linkedin_url, lead_group_id]
       responses:
         '201':
           description: Lead created
@@ -318,18 +322,21 @@ paths:
                   items:
                     type: object
                     properties:
-                      linkedin_url: { type: string }
-                      email: { type: string }
                       first_name: { type: string }
                       last_name: { type: string }
+                      linkedin_url:
+                        type: string
+                        format: uri
+                        description: Must be a valid LinkedIn profile URL
+                        pattern: '^https?://(www\.)?linkedin\.com/in/[\w-]+/?$'
                       company: { type: string }
                       position: { type: string, description: Job title / position }
                       location: { type: string }
+                      email: { type: string, format: email }
                       phone: { type: string }
                       custom_fields: { type: object }
-                      lead_group_id: { type: string, format: uuid }
                       tags: { type: array, items: { type: string } }
-                    required: [first_name, last_name]
+                    required: [first_name, last_name, linkedin_url]
                 update_existing: { type: boolean, default: true }
               required: [leads]
       responses:
