@@ -119,7 +119,7 @@ Zapier connects Cold Navigator to over 6,000 apps without writing code. Use Cold
     | First Name | `data.lead.first_name` |
     | Last Name | `data.lead.last_name` |
     | Company | `data.lead.company` |
-    | Job Title | `data.lead.title` |
+    | Position | `data.lead.position` |
     | LinkedIn URL | `data.lead.linkedin_url` |
     | Lead Source | `LinkedIn - Cold Navigator` (static text) |
 
@@ -134,7 +134,7 @@ Zapier connects Cold Navigator to over 6,000 apps without writing code. Use Cold
 
     Thanks for connecting on LinkedIn! I wanted to follow up and share
     a few resources that might be relevant given your role as
-    {{data.lead.title}} at {{data.lead.company}}.
+    {{data.lead.position}} at {{data.lead.company}}.
 
     Would you be open to a quick 15-minute call this week?
 
@@ -164,7 +164,7 @@ Here is what Zapier receives when a lead connects:
       "last_name": "Chen",
       "email": "michael.chen@acme.com",
       "company": "Acme Corp",
-      "title": "Director of Engineering",
+      "position": "Director of Engineering",
       "linkedin_url": "https://linkedin.com/in/michaelchen"
     },
     "campaign": {

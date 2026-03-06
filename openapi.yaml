@@ -54,14 +54,16 @@ components:
         id: { type: string, format: uuid }
         first_name: { type: string }
         last_name: { type: string }
-        full_name: { type: string }
         linkedin_url: { type: string, format: uri }
         email: { type: string, format: email }
         company: { type: string }
-        title: { type: string }
+        position: { type: string, description: Job title / position }
+        location: { type: string }
+        phone: { type: string }
         status:
           type: string
           enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested]
+        is_blacklisted: { type: boolean }
         custom_fields: { type: object }
         tags: { type: array, items: { type: string } }
         created_at: { type: string, format: date-time }
@@ -279,7 +281,9 @@ paths:
                 first_name: { type: string }
                 last_name: { type: string }
                 company: { type: string }
-                title: { type: string }
+                position: { type: string, description: Job title / position }
+                location: { type: string }
+                phone: { type: string }
                 custom_fields: { type: object }
                 lead_group_id: { type: string, format: uuid }
                 tags: { type: array, items: { type: string } }
@@ -319,7 +323,9 @@ paths:
                       first_name: { type: string }
                       last_name: { type: string }
                       company: { type: string }
-                      title: { type: string }
+                      position: { type: string, description: Job title / position }
+                      location: { type: string }
+                      phone: { type: string }
                       custom_fields: { type: object }
                       lead_group_id: { type: string, format: uuid }
                       tags: { type: array, items: { type: string } }
@@ -384,11 +390,13 @@ paths:
                 first_name: { type: string }
                 last_name: { type: string }
                 company: { type: string }
-                title: { type: string }
+                position: { type: string, description: Job title / position }
+                location: { type: string }
                 email: { type: string }
+                phone: { type: string }
                 custom_fields: { type: object }
-                tags: { type: array, items: { type: string } }
                 status: { type: string }
+                is_blacklisted: { type: boolean }
       responses:
         '200':
           description: Lead updated

@@ -63,7 +63,7 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
           "first_name": "Sarah",
           "last_name": "Johnson",
           "company": "Acme Corp",
-          "title": "VP of Sales",
+          "position": "VP of Sales",
           "linkedin_url": "https://linkedin.com/in/sarahjohnson"
         },
         "campaign": {
@@ -81,7 +81,7 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
     - **Message text**: `data.message.text`
     - **Lead name**: `data.lead.first_name` + `data.lead.last_name`
     - **Lead company**: `data.lead.company`
-    - **Lead title**: `data.lead.title`
+    - **Lead position**: `data.lead.position`
     - **Lead ID**: `data.lead.id` (needed for the API callback)
   </Step>
 
@@ -128,7 +128,7 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
           },
           {
             role: 'user',
-            content: `Classify this LinkedIn reply from ${$json.data.lead.first_name} ${$json.data.lead.last_name} (${$json.data.lead.title} at ${$json.data.lead.company}):\n\n"${$json.data.message.text}"\n\nRespond with JSON in this exact format:\n{\n  "classification": "interested" | "not_interested" | "needs_follow_up",\n  "confidence": 0.0 to 1.0,\n  "reasoning": "Brief explanation",\n  "suggested_action": "What the sales rep should do next",\n  "tags": ["array of relevant tags"]\n}`
+            content: `Classify this LinkedIn reply from ${$json.data.lead.first_name} ${$json.data.lead.last_name} (${$json.data.lead.position} at ${$json.data.lead.company}):\n\n"${$json.data.message.text}"\n\nRespond with JSON in this exact format:\n{\n  "classification": "interested" | "not_interested" | "needs_follow_up",\n  "confidence": 0.0 to 1.0,\n  "reasoning": "Brief explanation",\n  "suggested_action": "What the sales rep should do next",\n  "tags": ["array of relevant tags"]\n}`
           }
         ]
       })
