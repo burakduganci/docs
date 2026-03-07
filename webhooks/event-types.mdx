@@ -70,10 +70,10 @@ Fired when a lead accepts your LinkedIn connection request.
       "first_name": "Sarah",
       "last_name": "Chen",
       "linkedin_url": "https://www.linkedin.com/in/sarachen",
-      "position": "VP of Engineering",
       "company": "Acme Corp",
-      "status": "replied",
-      "tags": ["enterprise", "inbound-interest"]
+      "position": "VP of Engineering",
+      "email": null,
+      "status": "replied"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
@@ -118,20 +118,13 @@ Fired when a campaign encounters a critical error and cannot continue executing.
   "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
-    "campaign": {
-      "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
-      "name": "Q1 Enterprise Outreach",
-      "status": "completed",
-      "started_at": "2026-02-15T09:00:00.000Z",
-      "completed_at": "2026-03-06T18:45:00.000Z"
-    },
+    "campaign_id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+    "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "campaign_name": "Q1 Enterprise Outreach",
     "stats": {
-      "total_leads": 250,
+      "total": 250,
       "completed": 243,
-      "replied": 38,
-      "connected": 67,
-      "unenrolled": 7,
-      "errored": 0
+      "failed": 0
     }
   }
 }
@@ -161,19 +154,20 @@ Fired when an inbound message is received from any LinkedIn connection. This dif
   "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
-    "message": {
-      "type": "regular",
-      "text": "Hi Sarah, I noticed your work on distributed systems at Acme. Would love to connect and share how we're helping engineering teams..."
-    },
     "lead": {
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
       "first_name": "Sarah",
       "last_name": "Chen",
-      "linkedin_url": "https://www.linkedin.com/in/sarachen"
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "VP of Engineering"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
+    },
+    "message": {
+      "type": "linkedin_message"
     }
   }
 }
@@ -208,18 +202,16 @@ Fired when a lead accepts your connection request. This is the same underlying e
       "first_name": "Sarah",
       "last_name": "Chen",
       "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
       "position": "VP of Engineering",
-      "company": "Acme Corp"
-    },
-    "connection_request": {
-      "sent_at": "2026-03-04T08:15:00.000Z",
-      "accepted_at": "2026-03-06T11:30:42.000Z",
-      "had_note": true
+      "email": null,
+      "status": "connected"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
-    }
+    },
+    "connected_at": "2026-03-06T11:30:42.000Z"
   }
 }
 ```
@@ -252,7 +244,9 @@ Fired when a lead has completed all steps in the workflow and exits the campaign
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
       "first_name": "Sarah",
       "last_name": "Chen",
-      "linkedin_url": "https://www.linkedin.com/in/sarachen"
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "VP of Engineering"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
@@ -260,7 +254,7 @@ Fired when a lead has completed all steps in the workflow and exits the campaign
     },
     "workflow_step": {
       "type": "send_message",
-      "label": "Follow-up message"
+      "action_type": "send_message"
     }
   }
 }
@@ -290,22 +284,10 @@ Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator autom
   "api_version": "2026-03-01",
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
-    "linkedin_account": {
-      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
-      "name": "John Sales",
-      "status": "disconnected",
-      "previous_status": "connected",
-      "disconnected_at": "2026-03-06T03:17:40.000Z"
-    },
-    "affected_campaigns": [
-      {
-        "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
-        "name": "Q1 Enterprise Outreach",
-        "status": "paused",
-        "pending_leads": 142
-      }
-    ],
-    "action_required": "Re-authenticate the LinkedIn account in Settings > LinkedIn Accounts."
+    "linkedin_account_id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+    "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "account_name": "John Sales",
+    "reason": "Session expired"
   }
 }
 ```

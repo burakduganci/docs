@@ -136,9 +136,9 @@ n8n is an open-source workflow automation tool that you can self-host or use as 
     Campaign "{{$json.data.campaign.name}}" has completed.
 
     Results:
-    - Total leads: {{$json.data.stats.total_leads}}
-    - Replies: {{$json.data.stats.replies}}
-    - Connections: {{$json.data.stats.connections}}
+    - Total leads: {{$json.data.stats.total}}
+    - Completed: {{$json.data.stats.completed}}
+    - Failed: {{$json.data.stats.failed}}
 
     View full results at https://app.coldnavigator.com/campaigns/{{$json.data.campaign.id}}
     ```

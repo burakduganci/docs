@@ -159,8 +159,8 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
     | AI Classification | Lead Status | Description |
     |------------------|-------------|-------------|
     | `interested` | `qualified` | Lead expressed clear interest |
-    | `not_interested` | `not_interested` | Lead declined or showed no interest |
-    | `needs_follow_up` | `follow_up` | Ambiguous reply, needs human review |
+    | `not_interested` | `unqualified` | Lead declined or showed no interest |
+    | `needs_follow_up` | `contacted` | Ambiguous reply, needs human review |
 
     <CodeGroup>
     ```bash cURL
@@ -177,8 +177,8 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
 
     const statusMap = {
       'interested': 'qualified',
-      'not_interested': 'not_interested',
-      'needs_follow_up': 'follow_up'
+      'not_interested': 'unqualified',
+      'needs_follow_up': 'contacted'
     };
 
     const response = await fetch(
@@ -254,9 +254,9 @@ Webhook Trigger (Cold Navigator lead.replied)
         → Route 1 (interested): HTTP → PATCH lead status to "qualified"
                                  HTTP → POST tags ["ai-interested", ...]
                                  Slack → Notify #sales-hot-leads
-        → Route 2 (not_interested): HTTP → PATCH lead status to "not_interested"
+        → Route 2 (not_interested): HTTP → PATCH lead status to "unqualified"
                                      HTTP → POST tags ["ai-not_interested"]
-        → Route 3 (needs_follow_up): HTTP → PATCH lead status to "follow_up"
+        → Route 3 (needs_follow_up): HTTP → PATCH lead status to "contacted"
                                       HTTP → POST tags ["ai-follow_up"]
                                       Slack → Notify #sales-review
 ```

@@ -90,7 +90,7 @@ components:
         status:
           type: string
           description: Current pipeline status of the lead
-          enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+          enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
           example: new
         is_blacklisted:
           type: boolean
@@ -325,10 +325,6 @@ components:
           format: date-time
           nullable: true
           example: null
-        failure_count:
-          type: integer
-          description: Total number of failed deliveries
-          example: 0
         consecutive_failures:
           type: integer
           description: Consecutive failures. Webhook auto-disables at 5.
@@ -637,8 +633,8 @@ paths:
           in: query
           schema:
             type: string
-            enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
-          description: Filter by lead status
+            enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
+          description: Filter by lead status. Supports comma-separated values for multiple statuses.
           example: replied
         - name: campaign_id
           in: query
@@ -665,20 +661,13 @@ paths:
             format: date-time
           description: Only return leads updated after this ISO 8601 timestamp
           example: '2026-03-01T00:00:00Z'
-        - name: sort
+        - name: sort_by
           in: query
           schema:
             type: string
-            enum: [created_at, updated_at, first_name, last_name, company, status]
-            default: created_at
-          description: Field to sort results by
-        - name: order
-          in: query
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: desc
-          description: Sort order
+            enum: [newest, oldest]
+            default: newest
+          description: Sort order for results. `newest` returns most recently created first, `oldest` returns oldest first.
       responses:
         '200':
           description: Lead list with pagination
@@ -854,11 +843,11 @@ paths:
                   example: d63ee4cf-3107-4291-a498-43e5cc498fac
                 update_existing:
                   type: boolean
-                  default: true
+                  default: false
                   description: If true, updates existing leads matched by linkedin_url. If false, skips them.
               required: [leads]
       responses:
-        '201':
+        '200':
           description: Batch result summary
           content:
             application/json:
@@ -893,6 +882,9 @@ paths:
                             error:
                               type: string
                               example: linkedin_url is required and must be a valid LinkedIn profile URL
+                  message:
+                    type: string
+                    example: Success
 
   /public/leads/{id}:
     get:
@@ -971,7 +963,7 @@ paths:
                   example: { industry: "SaaS", notes: "Met at conference" }
                 status:
                   type: string
-                  enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+                  enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
                 is_blacklisted:
                   type: boolean
       responses:
@@ -1032,7 +1024,7 @@ paths:
                 status:
                   type: string
                   description: New status to set
-                  enum: [new, contacted, connected, replied, qualified, converted, unsubscribed, disqualified, not_interested, follow_up]
+                  enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
                   example: qualified
               required: [status]
       responses:
@@ -1046,19 +1038,17 @@ paths:
                   data:
                     type: object
                     properties:
-                      id:
-                        type: string
-                        format: uuid
-                        example: f7e6d5c4-b3a2-1098-7654-321fedcba098
                       old_status:
                         type: string
                         example: new
                       new_status:
                         type: string
                         example: qualified
+                      lead:
+                        $ref: '#/components/schemas/Lead'
                   message:
                     type: string
-                    example: Status updated
+                    example: Success
 
   /public/leads/{id}/tags:
     post:
