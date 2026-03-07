@@ -101,12 +101,6 @@ components:
           description: Arbitrary key-value pairs for custom data
           example: { industry: "SaaS", employee_count: "500-1000" }
           nullable: true
-        tags:
-          type: array
-          items:
-            type: string
-          description: Tags for categorizing and filtering leads
-          example: ["enterprise", "inbound"]
         created_at:
           type: string
           format: date-time
@@ -646,12 +640,6 @@ paths:
             type: string
             format: uuid
           description: Filter by campaign enrollment
-        - name: tag
-          in: query
-          schema:
-            type: string
-          description: Filter by tag (exact match)
-          example: enterprise
         - name: search
           in: query
           schema:
@@ -766,12 +754,6 @@ paths:
                   type: object
                   description: Arbitrary key-value pairs
                   example: { industry: "SaaS" }
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  description: Tags to apply to the new lead
-                  example: ["enterprise", "inbound"]
               required: [first_name, last_name, linkedin_url, lead_group_id]
       responses:
         '200':
@@ -856,10 +838,6 @@ paths:
                         default: new
                       custom_fields:
                         type: object
-                      tags:
-                        type: array
-                        items:
-                          type: string
                     required: [first_name, last_name, linkedin_url]
                 lead_group_id:
                   type: string
@@ -915,7 +893,7 @@ paths:
     get:
       operationId: getLead
       summary: Get lead details
-      description: Returns full lead details including tags, groups, and workflow state.
+      description: Returns full lead details including groups and workflow state.
       tags: [Leads]
       x-required-scope: read:leads
       parameters:
@@ -928,7 +906,7 @@ paths:
           example: f7e6d5c4-b3a2-1098-7654-321fedcba098
       responses:
         '200':
-          description: Lead details with tags, groups, and workflow states
+          description: Lead details with groups and workflow states
           content:
             application/json:
               schema:
@@ -939,12 +917,6 @@ paths:
                       - $ref: '#/components/schemas/Lead'
                       - type: object
                         properties:
-                          tags:
-                            type: array
-                            items:
-                              type: string
-                            description: Tags assigned to this lead
-                            example: ["enterprise", "inbound"]
                           lead_groups:
                             type: array
                             items:
@@ -1120,102 +1092,6 @@ paths:
                   message:
                     type: string
                     example: Success
-
-  /public/leads/{id}/tags:
-    post:
-      operationId: addLeadTags
-      summary: Add tags to lead
-      description: Adds one or more tags to a lead. Duplicate tags are silently ignored.
-      tags: [Leads]
-      x-required-scope: write:leads
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  description: Tags to add (strings, any value)
-                  example: ["enterprise", "high-intent", "ai-qualified"]
-              required: [tags]
-      responses:
-        '200':
-          description: Tags added
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      tags:
-                        type: array
-                        items:
-                          type: string
-                        description: All tags currently on the lead
-                        example: ["enterprise", "high-intent", "ai-qualified"]
-                  message:
-                    type: string
-                    example: Tags added
-    delete:
-      operationId: removeLeadTags
-      summary: Remove tags from lead
-      description: Removes one or more tags from a lead. Tags not present on the lead are silently ignored.
-      tags: [Leads]
-      x-required-scope: write:leads
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  description: Tags to remove
-                  example: ["ai-qualified"]
-              required: [tags]
-      responses:
-        '200':
-          description: Tags removed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      tags:
-                        type: array
-                        items:
-                          type: string
-                        description: Remaining tags on the lead
-                        example: ["enterprise", "high-intent"]
-                  message:
-                    type: string
-                    example: Tags removed
 
   /public/leads/{id}/activity:
     get:
