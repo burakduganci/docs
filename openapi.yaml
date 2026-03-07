@@ -708,7 +708,7 @@ paths:
       summary: Create lead
       description: |
         Creates a new lead in your workspace and adds it to the specified lead group.
-        Duplicates are detected by `linkedin_url` — if a lead with the same URL already exists, a `409 Conflict` is returned.
+        If a lead with the same `linkedin_url` already exists, the existing lead is added to the specified group and returned with a `200` status. New leads return `201`.
       tags: [Leads]
       x-required-scope: write:leads
       requestBody:
@@ -764,6 +764,18 @@ paths:
                   example: ["enterprise", "inbound"]
               required: [first_name, last_name, linkedin_url, lead_group_id]
       responses:
+        '200':
+          description: Lead already exists — added to the specified group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Lead'
+                  message:
+                    type: string
+                    example: Lead already exists, added to group
         '201':
           description: Lead created
           content:
@@ -778,17 +790,15 @@ paths:
                     example: Lead created
         '400':
           description: Validation error (missing required fields, invalid LinkedIn URL format)
-        '409':
-          description: Duplicate lead — a lead with this LinkedIn URL already exists
 
   /public/leads/batch:
     post:
       operationId: batchCreateLeads
       summary: Batch create/update leads
       description: |
-        Create or update up to 100 leads in a single request.
-        Matching is done by `linkedin_url`. If a lead with the same URL exists, it is updated (when `update_existing` is true).
-        Each lead must have a valid `linkedin_url`.
+        Create or update up to 100 leads in a single request and add them to the specified lead group.
+        Matching is done by `linkedin_url`. If a lead with the same URL exists, it is updated (when `update_existing` is true) or skipped.
+        All leads (new, updated, or skipped) are added to the specified group. Each lead must have a valid `linkedin_url`.
       tags: [Leads]
       x-required-scope: write:leads
       requestBody:
@@ -839,13 +849,13 @@ paths:
                 lead_group_id:
                   type: string
                   format: uuid
-                  description: Lead group to add new leads to
+                  description: Lead group to add all leads to. Required — every lead must belong to a group.
                   example: d63ee4cf-3107-4291-a498-43e5cc498fac
                 update_existing:
                   type: boolean
                   default: false
                   description: If true, updates existing leads matched by linkedin_url. If false, skips them.
-              required: [leads]
+              required: [leads, lead_group_id]
       responses:
         '200':
           description: Batch result summary
