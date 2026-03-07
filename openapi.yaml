@@ -536,6 +536,10 @@ components:
         error_message:
           type: string
           nullable: true
+        campaign_id:
+          type: string
+          format: uuid
+          description: Campaign this activity belongs to
         started_at:
           type: string
           format: date-time
@@ -752,6 +756,12 @@ paths:
                 phone:
                   type: string
                   example: '+1 555-0123'
+                status:
+                  type: string
+                  description: Initial pipeline status for the lead. Defaults to `new` if not provided.
+                  enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
+                  default: new
+                  example: new
                 custom_fields:
                   type: object
                   description: Arbitrary key-value pairs
@@ -839,6 +849,11 @@ paths:
                         format: email
                       phone:
                         type: string
+                      status:
+                        type: string
+                        description: Initial status. Defaults to `new`.
+                        enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
+                        default: new
                       custom_fields:
                         type: object
                       tags:
@@ -913,14 +928,60 @@ paths:
           example: f7e6d5c4-b3a2-1098-7654-321fedcba098
       responses:
         '200':
-          description: Lead details
+          description: Lead details with tags, groups, and workflow states
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Lead'
+                    allOf:
+                      - $ref: '#/components/schemas/Lead'
+                      - type: object
+                        properties:
+                          tags:
+                            type: array
+                            items:
+                              type: string
+                            description: Tags assigned to this lead
+                            example: ["enterprise", "inbound"]
+                          lead_groups:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                name:
+                                  type: string
+                            description: Lead groups this lead belongs to
+                          workflow_states:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                campaign_id:
+                                  type: string
+                                  format: uuid
+                                status:
+                                  type: string
+                                current_node_id:
+                                  type: string
+                                next_execution_at:
+                                  type: string
+                                  format: date-time
+                                  nullable: true
+                                created_at:
+                                  type: string
+                                  format: date-time
+                                updated_at:
+                                  type: string
+                                  format: date-time
+                            description: Campaign workflow states for this lead (most recent 5)
                   message:
                     type: string
                     example: Success
