@@ -1306,8 +1306,7 @@ paths:
       summary: Start campaign
       description: |
         Starts a draft campaign. Uses the lead groups already associated with the campaign.
-        Optionally accepts `lead_group_ids` to override. If no lead groups are associated, returns 400.
-        The campaign must have a valid workflow and at least one linked LinkedIn account.
+        Returns 400 if no lead groups, no valid workflow, or no active LinkedIn account is linked.
         Triggers a `campaign.started` webhook event.
       tags: [Campaigns]
       x-required-scope: write:campaigns
@@ -1318,19 +1317,6 @@ paths:
           schema:
             type: string
             format: uuid
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                lead_group_ids:
-                  type: array
-                  items:
-                    type: string
-                    format: uuid
-                  description: Optional. Override the campaign's saved lead groups. If omitted, uses the lead groups already associated with the campaign.
       responses:
         '200':
           description: Campaign started
