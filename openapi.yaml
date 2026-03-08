@@ -92,10 +92,6 @@ components:
           description: Current pipeline status of the lead
           enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
           example: new
-        is_blacklisted:
-          type: boolean
-          description: Whether the lead is blacklisted from all outreach
-          example: false
         custom_fields:
           type: object
           description: Arbitrary key-value pairs for custom data
@@ -1007,8 +1003,6 @@ paths:
                 status:
                   type: string
                   enum: [new, contacted, engaged, qualified, converted, unqualified, lost, replied, connected, do_not_contact]
-                is_blacklisted:
-                  type: boolean
       responses:
         '200':
           description: Lead updated
