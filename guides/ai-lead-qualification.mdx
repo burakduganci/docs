@@ -19,10 +19,9 @@ Cold Navigator                Automation Tool             OpenAI              Co
     |                              |<-- interested / not ----|                     |
     |                              |                                               |
     |                              |--- PATCH /leads/{id}/status ---------------->|
-    |                              |--- POST /leads/{id}/tags ------------------->|
 ```
 
-When a lead replies, Cold Navigator sends a webhook event to your automation tool. The automation tool extracts the message, sends it to OpenAI for classification, then calls the Cold Navigator API to update the lead status and add tags based on the AI's assessment.
+When a lead replies, Cold Navigator sends a webhook event to your automation tool. The automation tool extracts the message, sends it to OpenAI for classification, then calls the Cold Navigator API to update the lead status based on the AI's assessment.
 
 ## Prerequisites
 
@@ -200,34 +199,39 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
     </CodeGroup>
   </Step>
 
-  <Step title="Add Tags Based on AI Classification">
-    Add AI-generated tags to the lead for filtering and reporting.
+  <Step title="Store AI Classification in Custom Fields">
+    Save the AI classification details in the lead's custom fields for filtering and reporting.
 
     <CodeGroup>
     ```bash cURL
-    curl -X POST https://app.coldnavigator.com/api/v1/public/leads/LEAD_ID/tags \
+    curl -X PATCH https://app.coldnavigator.com/api/v1/public/leads/LEAD_ID \
       -H "x-api-key: YOUR_API_KEY" \
       -H "Content-Type: application/json" \
       -d '{
-        "tags": ["ai-qualified", "high-intent", "meeting-ready"]
+        "custom_fields": {
+          "ai_classification": "interested",
+          "ai_confidence": "high",
+          "ai_summary": "Lead expressed interest in scheduling a demo"
+        }
       }'
     ```
 
     ```javascript n8n Code Node
-    const tags = [
-      `ai-${$json.classification}`,
-      ...$json.tags
-    ];
-
     const response = await fetch(
-      `https://app.coldnavigator.com/api/v1/public/leads/${$json.lead_id}/tags`,
+      `https://app.coldnavigator.com/api/v1/public/leads/${$json.lead_id}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'x-api-key': $env.COLD_NAVIGATOR_API_KEY,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ tags })
+        body: JSON.stringify({
+          custom_fields: {
+            ai_classification: $json.classification,
+            ai_confidence: $json.confidence,
+            ai_summary: $json.summary
+          }
+        })
       }
     );
 
@@ -236,7 +240,7 @@ When a lead replies, Cold Navigator sends a webhook event to your automation too
     </CodeGroup>
 
     <Tip>
-      Prefix AI-generated tags with `ai-` (e.g., `ai-interested`, `ai-not_interested`) so you can easily distinguish them from manually applied tags in Cold Navigator.
+      Use `custom_fields` to store AI-generated metadata like classification, confidence score, and summary. This keeps all AI insights attached to the lead for easy filtering.
     </Tip>
   </Step>
 </Steps>
