@@ -1305,7 +1305,9 @@ paths:
       operationId: startCampaign
       summary: Start campaign
       description: |
-        Starts a draft or paused campaign. The campaign must have at least one enrolled lead and a valid workflow.
+        Starts a draft campaign. Uses the lead groups already associated with the campaign.
+        Optionally accepts `lead_group_ids` to override. If no lead groups are associated, returns 400.
+        The campaign must have a valid workflow and at least one linked LinkedIn account.
         Triggers a `campaign.started` webhook event.
       tags: [Campaigns]
       x-required-scope: write:campaigns
@@ -1316,11 +1318,45 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lead_group_ids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Optional. Override the campaign's saved lead groups. If omitted, uses the lead groups already associated with the campaign.
       responses:
         '200':
           description: Campaign started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: active
+                      enrolled_leads:
+                        type: integer
+                      total_leads:
+                        type: integer
+                  message:
+                    type: string
+                    example: Campaign started
         '400':
-          description: Campaign cannot be started (no leads, no workflow, or already active)
+          description: Campaign cannot be started (no lead groups, no workflow, already active/completed)
 
   /public/campaigns/{id}/pause:
     post:
@@ -1341,12 +1377,31 @@ paths:
       responses:
         '200':
           description: Campaign paused
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: paused
+                  message:
+                    type: string
+                    example: Campaign paused
 
   /public/campaigns/{id}/resume:
     post:
       operationId: resumeCampaign
       summary: Resume campaign
-      description: Resumes a paused campaign. Workflow steps continue from where they left off.
+      description: |
+        Resumes a paused campaign. Workflow steps continue from where they left off.
+        Requires at least one active LinkedIn account linked to the campaign.
       tags: [Campaigns]
       x-required-scope: write:campaigns
       parameters:
@@ -1359,6 +1414,23 @@ paths:
       responses:
         '200':
           description: Campaign resumed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      campaign_id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: active
+                  message:
+                    type: string
+                    example: Campaign resumed
 
   # ============ LINKEDIN ACTIONS ============
   /public/linkedin/send-connection:
