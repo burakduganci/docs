@@ -1355,11 +1355,6 @@ paths:
                   format: uuid
                   description: LinkedIn account to send from
                   example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
-                note:
-                  type: string
-                  maxLength: 300
-                  description: Optional connection note (max 300 chars). LinkedIn may reject requests with notes if you're not premium.
-                  example: "Hi Jane, I noticed your work at Acme — would love to connect!"
               required: [lead_id, linkedin_account_id]
       responses:
         '202':
@@ -1413,45 +1408,6 @@ paths:
                 properties:
                   data:
                     $ref: '#/components/schemas/AsyncJob'
-
-  /public/linkedin/send-inmail:
-    post:
-      operationId: sendInMail
-      summary: Send LinkedIn InMail
-      description: |
-        Queues an InMail message to a lead. Requires a Sales Navigator subscription on the sending account.
-        InMails can be sent to leads who are not 1st-degree connections.
-      tags: [LinkedIn Actions]
-      x-required-scope: write:linkedin_actions
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                lead_id:
-                  type: string
-                  format: uuid
-                  example: f7e6d5c4-b3a2-1098-7654-321fedcba098
-                linkedin_account_id:
-                  type: string
-                  format: uuid
-                  example: d5e6f7a8-b9c0-1234-5678-9abcdef01234
-                subject:
-                  type: string
-                  maxLength: 200
-                  description: InMail subject line
-                  example: Quick question about your team's outreach strategy
-                message:
-                  type: string
-                  minLength: 1
-                  maxLength: 8000
-                  example: "Hi Jane, I came across your profile..."
-              required: [lead_id, linkedin_account_id, subject, message]
-      responses:
-        '202':
-          description: InMail queued
 
   /public/linkedin/view-profile:
     post:
@@ -1544,39 +1500,6 @@ paths:
       responses:
         '200':
           description: Conversation list
-
-  /public/conversations/{id}:
-    get:
-      operationId: getConversation
-      summary: Get conversation with messages
-      description: Returns a conversation thread including paginated messages.
-      tags: [Conversations]
-      x-required-scope: read:conversations
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: message_limit
-          in: query
-          schema:
-            type: integer
-            default: 50
-            maximum: 100
-          description: Number of messages to return
-        - name: message_offset
-          in: query
-          schema:
-            type: integer
-            default: 0
-          description: Message pagination offset
-      responses:
-        '200':
-          description: Conversation with messages
-        '404':
-          description: Conversation not found
 
   # ============ LEAD GROUPS ============
   /public/lead-groups:
