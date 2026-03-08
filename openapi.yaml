@@ -1210,32 +1210,6 @@ paths:
         '404':
           description: Campaign not found
 
-  /public/campaigns/{id}/leads:
-    get:
-      operationId: getCampaignLeads
-      summary: List campaign leads with workflow state
-      description: Returns leads enrolled in this campaign with their current workflow step and status.
-      tags: [Campaigns]
-      x-required-scope: read:campaigns
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/offsetParam'
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [active, paused, completed, failed, pending]
-          description: Filter by workflow status within the campaign
-      responses:
-        '200':
-          description: Campaign leads with workflow state
-
   /public/campaigns/{id}/enroll:
     post:
       operationId: enrollLeads
