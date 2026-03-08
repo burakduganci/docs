@@ -116,53 +116,70 @@ components:
         name:
           type: string
           example: Q1 Enterprise Outreach
+        description:
+          type: string
+          nullable: true
+          example: Outreach campaign targeting enterprise decision makers
         status:
           type: string
           description: Current campaign lifecycle status
           enum: [draft, active, paused, completed, archived]
           example: active
-        stats:
-          type: object
-          description: Campaign performance metrics (read-only)
-          properties:
-            total_leads:
-              type: integer
-              description: Total leads enrolled in campaign
-              example: 250
-            connections_sent:
-              type: integer
-              example: 200
-            connections_accepted:
-              type: integer
-              example: 67
-            messages_sent:
-              type: integer
-              example: 120
-            replies_received:
-              type: integer
-              example: 38
-            acceptance_rate:
-              type: number
-              description: Percentage of connection requests accepted (0-100)
-              example: 33.5
-            reply_rate:
-              type: number
-              description: Percentage of messages that got replies (0-100)
-              example: 31.7
+        start_date:
+          type: string
+          format: date-time
+          nullable: true
+        end_date:
+          type: string
+          format: date-time
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+          example: Europe/Istanbul
         created_at:
           type: string
           format: date-time
           example: '2026-02-15T09:00:00Z'
-        started_at:
+        updated_at:
           type: string
           format: date-time
-          nullable: true
           example: '2026-02-15T09:00:00Z'
-        completed_at:
-          type: string
-          format: date-time
-          nullable: true
-          example: null
+
+    CampaignDetail:
+      description: Campaign with performance stats (returned by GET /campaigns/{id})
+      allOf:
+        - $ref: '#/components/schemas/Campaign'
+        - type: object
+          properties:
+            stats:
+              type: object
+              description: Campaign performance metrics (read-only)
+              properties:
+                total_leads:
+                  type: integer
+                  description: Total leads enrolled in campaign
+                  example: 250
+                connections_sent:
+                  type: integer
+                  example: 200
+                connections_accepted:
+                  type: integer
+                  example: 67
+                messages_sent:
+                  type: integer
+                  example: 120
+                replies_received:
+                  type: integer
+                  example: 38
+                acceptance_rate:
+                  type: number
+                  description: Percentage of connection requests accepted (0-100)
+                  example: 33.5
+                reply_rate:
+                  type: number
+                  description: Percentage of messages that got replies (0-100)
+                  example: 31.7
 
     LinkedInAccount:
       type: object
@@ -1167,7 +1184,7 @@ paths:
     get:
       operationId: getCampaign
       summary: Get campaign details with stats
-      description: Returns detailed campaign info including performance statistics and workflow definition.
+      description: Returns campaign info including performance statistics.
       tags: [Campaigns]
       x-required-scope: read:campaigns
       parameters:
@@ -1186,7 +1203,7 @@ paths:
                 type: object
                 properties:
                   data:
-                    $ref: '#/components/schemas/Campaign'
+                    $ref: '#/components/schemas/CampaignDetail'
                   message:
                     type: string
                     example: Success
