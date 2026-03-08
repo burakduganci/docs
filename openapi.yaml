@@ -498,18 +498,8 @@ components:
 
     Activity:
       type: object
-      description: A single workflow action or event for a lead
+      description: A single workflow action for a lead
       properties:
-        id:
-          type: string
-          format: uuid
-        lead_workflow_state_id:
-          type: string
-          format: uuid
-        node_id:
-          type: string
-          description: Workflow node that triggered this action
-          example: node_3
         action_type:
           type: string
           description: Type of action performed
@@ -519,17 +509,14 @@ components:
           type: string
           enum: [pending, success, failed, skipped]
           example: success
-        result:
-          type: object
-          nullable: true
-          description: Action-specific result data
-        error_message:
-          type: string
-          nullable: true
         campaign_id:
           type: string
           format: uuid
           description: Campaign this activity belongs to
+        campaign_name:
+          type: string
+          description: Name of the campaign
+          example: Q1 Enterprise Outreach
         started_at:
           type: string
           format: date-time
