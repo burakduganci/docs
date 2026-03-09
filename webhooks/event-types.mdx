@@ -1,6 +1,6 @@
 ---
 title: "Event Types"
-description: "Complete reference of all webhook event types with example payloads for each category."
+description: "Complete reference of all webhook event types with detailed data schemas and example payloads."
 icon: "list"
 ---
 
@@ -14,19 +14,19 @@ Cold Navigator supports webhook event types organized into 6 categories. When cr
 |----------|-----------|-------------|
 | **Lead** | `lead.created` | A new lead was added to the workspace |
 | | `lead.updated` | A lead's fields were modified |
-| | `lead.status_changed` | A lead's status changed (e.g., new, contacted, qualified) |
-| | `lead.replied` | A lead sent a reply message |
+| | `lead.status_changed` | A lead's status changed (e.g., new → contacted) |
+| | `lead.replied` | A lead replied to a campaign message |
 | | `lead.connected` | A lead accepted a connection request |
 | **Campaign** | `campaign.started` | A campaign began executing |
 | | `campaign.completed` | A campaign finished processing all enrolled leads |
 | | `campaign.paused` | A campaign was paused (manually or by system) |
-| | `campaign.error` | A campaign encountered an error and stopped |
+| | `campaign.error` | A campaign encountered an error *(reserved)* |
 | **Message** | `message.sent` | An outbound message was delivered to a lead |
-| | `message.received` | An inbound message was received from a lead |
+| | `message.received` | An inbound message was received from a contact |
 | **Connection** | `connection.sent` | A connection request was sent to a lead |
 | | `connection.accepted` | A lead accepted the connection request |
 | **Workflow** | `workflow.step_completed` | A lead completed a step in the campaign workflow |
-| | `workflow.lead_finished` | A lead finished the entire workflow (all steps done) |
+| | `workflow.lead_finished` | A lead finished the entire workflow |
 | **Account** | `account.disconnected` | A LinkedIn account lost its session |
 | | `account.rate_limited` | A LinkedIn account hit rate limits |
 
@@ -38,28 +38,139 @@ Events triggered when leads are created, modified, or interact with your outreac
 
 ### lead.created
 
-Fired when a new lead is added to your workspace, whether through the UI, API, CSV import, or Sales Navigator import.
+Fired when a new lead is added to your workspace — through the UI, API, CSV import, or Sales Navigator import.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The created lead (see [Lead object](#lead-object)) |
+| `source` | string | How the lead was created: `app`, `api`, `csv`, or `sales_navigator` |
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_m3k9x2p7_a1b2c3d4e5f6g7h8",
+  "event": "lead.created",
+  "created_at": "2026-03-06T14:23:17.482Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "VP of Engineering",
+      "email": "sarah@acme.com",
+      "status": "new"
+    },
+    "source": "app"
+  }
+}
+```
+</Accordion>
 
 ### lead.updated
 
-Fired when a lead's profile fields are modified (name, company, position, custom fields, tags, etc.).
+Fired when a lead's profile fields are modified (name, company, position, email, etc.).
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The updated lead (see [Lead object](#lead-object)) |
+| `updated_fields` | string[] | List of field names that changed |
+| `changes` | object | Key-value map of changed fields with their new values |
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_m3k9x2p7_b2c3d4e5f6g7h8i9",
+  "event": "lead.updated",
+  "created_at": "2026-03-06T15:10:33.120Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "CTO",
+      "email": "sarah@acme.com",
+      "status": "contacted"
+    },
+    "updated_fields": ["position", "email"],
+    "changes": {
+      "position": "CTO",
+      "email": "sarah@acme.com"
+    }
+  }
+}
+```
+</Accordion>
 
 ### lead.status_changed
 
 Fired when a lead's pipeline status changes. The payload includes both the previous and new status values.
 
-### lead.replied
+**`data` fields:**
 
-Fired when a lead sends a reply message on LinkedIn. This is typically the highest-value event for sales teams.
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead with updated status (see [Lead object](#lead-object)). Includes `previous_status`. |
+| `old_status` | string | The previous status value |
+| `new_status` | string | The new status value |
 
-### lead.connected
+**Valid statuses:** `new`, `contacted`, `engaged`, `qualified`, `converted`, `unqualified`, `lost`, `replied`, `connected`, `do_not_contact`
 
-Fired when a lead accepts your LinkedIn connection request.
-
-<Accordion title="Example lead event payload">
+<Accordion title="Example payload">
 ```json
 {
-  "id": "evt_m3k9x2p7_a1b2c3d4e5f6g7h8",
+  "id": "evt_m3k9x2p7_c3d4e5f6g7h8i9j0",
+  "event": "lead.status_changed",
+  "created_at": "2026-03-06T16:45:12.891Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "VP of Engineering",
+      "email": null,
+      "status": "qualified",
+      "previous_status": "contacted"
+    },
+    "old_status": "contacted",
+    "new_status": "qualified"
+  }
+}
+```
+</Accordion>
+
+### lead.replied
+
+Fired when a lead replies to a campaign message on LinkedIn. This only triggers for leads enrolled in campaigns — for all incoming messages, use `message.received`.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead who replied (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign the lead is enrolled in |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account that received the reply |
+| `message` | object | `{ text }` — the reply message text (truncated to 500 chars) |
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_m3k9x2p7_d4e5f6g7h8i9j0k1",
   "event": "lead.replied",
   "created_at": "2026-03-06T14:23:17.482Z",
   "api_version": "2026-03-01",
@@ -79,6 +190,10 @@ Fired when a lead accepts your LinkedIn connection request.
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
     },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
+    },
     "message": {
       "text": "Hi, thanks for reaching out. I'd be happy to schedule a call next week."
     }
@@ -86,6 +201,19 @@ Fired when a lead accepts your LinkedIn connection request.
 }
 ```
 </Accordion>
+
+### lead.connected
+
+Fired when a lead accepts your LinkedIn connection request (campaign workflow only).
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead who connected (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account |
+| `connected_at` | string | ISO 8601 timestamp of when the connection was accepted |
 
 ---
 
@@ -97,19 +225,44 @@ Events triggered by campaign lifecycle changes.
 
 Fired when a campaign transitions to the active state and begins processing leads.
 
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `campaign_id` | string | UUID of the campaign |
+| `campaign_name` | string | Name of the campaign |
+| `total_leads` | number | Number of leads enrolled |
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_m3l2n4p8_a1b2c3d4e5f6g7h8",
+  "event": "campaign.started",
+  "created_at": "2026-03-06T10:00:00.000Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "campaign_id": "c9d8e7f6-5432-1abc-def0-987654321abc",
+    "campaign_name": "Q1 Enterprise Outreach",
+    "total_leads": 250
+  }
+}
+```
+</Accordion>
+
 ### campaign.completed
 
-Fired when all enrolled leads in a campaign have finished their workflow or been unenrolled. Includes final campaign statistics.
+Fired when all enrolled leads in a campaign have finished their workflow.
 
-### campaign.paused
+**`data` fields:**
 
-Fired when a campaign is paused, either manually by a user or automatically by the system (e.g., due to account issues).
+| Field | Type | Description |
+|-------|------|-------------|
+| `campaign_id` | string | UUID of the campaign |
+| `campaign_name` | string | Name of the campaign |
+| `stats` | object | `{ total, completed, failed }` — final campaign statistics |
 
-### campaign.error
-
-Fired when a campaign encounters a critical error and cannot continue executing. Includes the error reason.
-
-<Accordion title="Example campaign event payload">
+<Accordion title="Example payload">
 ```json
 {
   "id": "evt_m3l2n4p8_b2c3d4e5f6g7h8i9",
@@ -119,17 +272,32 @@ Fired when a campaign encounters a critical error and cannot continue executing.
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
     "campaign_id": "c9d8e7f6-5432-1abc-def0-987654321abc",
-    "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "campaign_name": "Q1 Enterprise Outreach",
     "stats": {
       "total": 250,
       "completed": 243,
-      "failed": 0
+      "failed": 7
     }
   }
 }
 ```
 </Accordion>
+
+### campaign.paused
+
+Fired when a campaign is paused, either manually by a user or automatically by the system (e.g., due to account disconnection).
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `campaign_id` | string | UUID of the campaign |
+| `campaign_name` | string | Name of the campaign |
+| `reason` | string | Why the campaign was paused: `manual`, `account_disconnected`, `rate_limited` |
+
+### campaign.error
+
+*Reserved for future use.* Will fire when a campaign encounters a critical error.
 
 ---
 
@@ -139,16 +307,29 @@ Events triggered when messages are sent or received through LinkedIn.
 
 ### message.sent
 
-Fired when an outbound message (regular message or InMail) is successfully delivered to a lead on LinkedIn.
+Fired when an outbound message is delivered to a lead on LinkedIn. Triggers from three sources: campaign workflow, inbox UI, and legacy conversations.
 
-### message.received
+**`data` fields:**
 
-Fired when an inbound message is received from any LinkedIn connection. This differs from `lead.replied` which only fires for leads enrolled in campaigns.
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The message recipient (see [Lead object](#lead-object)). May have `id: null` if the recipient is not a saved lead. |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account that sent the message |
+| `campaign` | object \| null | `{ id, name }` — present only for campaign messages |
+| `message` | object | `{ type, text, source }` — message details |
 
-<Accordion title="Example message event payload">
+**`message` object:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | string | Always `linkedin_message` |
+| `text` | string \| null | Message text (truncated to 500 chars) |
+| `source` | string | Where the message was sent from: `campaign` or `inbox` |
+
+<Accordion title="Example payload (inbox)">
 ```json
 {
-  "id": "evt_m3m5o7q9_c3d4e5f6g7h8i9j0",
+  "id": "evt_m3m5o7q9_a1b2c3d4e5f6g7h8",
   "event": "message.sent",
   "created_at": "2026-03-06T09:12:33.741Z",
   "api_version": "2026-03-01",
@@ -160,19 +341,113 @@ Fired when an inbound message is received from any LinkedIn connection. This dif
       "last_name": "Chen",
       "linkedin_url": "https://www.linkedin.com/in/sarachen",
       "company": "Acme Corp",
-      "position": "VP of Engineering"
+      "position": "VP of Engineering",
+      "email": null,
+      "status": "contacted"
+    },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
+    },
+    "campaign": null,
+    "message": {
+      "type": "linkedin_message",
+      "text": "Hi Sarah, I wanted to follow up on our conversation...",
+      "source": "inbox"
+    }
+  }
+}
+```
+</Accordion>
+
+### message.received
+
+Fired when an inbound message is received from any LinkedIn contact. This triggers for **all** incoming messages — not just leads enrolled in campaigns. Contacts without a linked lead record will have `lead.id: null` with name/URL extracted from the conversation.
+
+Delivered via three paths for maximum reliability:
+1. **SSE realtime** — instant, when the inbox SSE connection receives the message
+2. **SSE conversation update** — backup, when LinkedIn delivers the message as a conversation update
+3. **Delta sync** — periodic background sync catches any messages missed by SSE
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The message sender. `id` is `null` if the contact is not a saved lead. Name and URL are extracted from the conversation. |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account that received the message |
+| `campaign` | object \| null | `{ id, name }` — present only if the conversation is linked to a campaign |
+| `message` | object | `{ text }` — message content (truncated to 500 chars) |
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_m3m5o7q9_b2c3d4e5f6g7h8i9",
+  "event": "message.received",
+  "created_at": "2026-03-06T14:30:22.100Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "lead": {
+      "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
+      "first_name": "Sarah",
+      "last_name": "Chen",
+      "linkedin_url": "https://www.linkedin.com/in/sarachen",
+      "company": "Acme Corp",
+      "position": "VP of Engineering",
+      "email": null,
+      "status": "replied"
+    },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
     },
     "message": {
-      "type": "linkedin_message"
+      "text": "Sounds great, let's schedule a call for Tuesday."
     }
   }
 }
 ```
 </Accordion>
+
+<Accordion title="Example payload (contact without lead record)">
+```json
+{
+  "id": "evt_m3m5o7q9_c3d4e5f6g7h8i9j0",
+  "event": "message.received",
+  "created_at": "2026-03-06T15:45:10.333Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "lead": {
+      "id": null,
+      "first_name": "Alex",
+      "last_name": "Johnson",
+      "linkedin_url": "https://www.linkedin.com/in/alexjohnson",
+      "company": null,
+      "position": null,
+      "email": null,
+      "status": null
+    },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
+    },
+    "campaign": null,
+    "message": {
+      "text": "Hey, saw your post about cold outreach. Would love to chat."
+    }
+  }
+}
+```
+</Accordion>
+
+<Info>
+  **`message.received` vs `lead.replied`**: Use `message.received` to capture all incoming LinkedIn messages regardless of source. Use `lead.replied` to only capture replies from leads actively enrolled in campaigns.
+</Info>
 
 ---
 
@@ -182,13 +457,30 @@ Events triggered by LinkedIn connection request activity.
 
 ### connection.sent
 
-Fired when a connection request is sent to a lead on LinkedIn, with or without a note.
+Fired when a connection request is sent to a lead via a campaign workflow.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead the request was sent to (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account |
 
 ### connection.accepted
 
 Fired when a lead accepts your connection request. This is the same underlying event as `lead.connected` but categorized separately for granular subscriptions.
 
-<Accordion title="Example connection event payload">
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead who accepted (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account |
+| `connected_at` | string | ISO 8601 timestamp of when the connection was accepted |
+
+<Accordion title="Example payload">
 ```json
 {
   "id": "evt_m3n8p0r2_d4e5f6g7h8i9j0k1",
@@ -211,6 +503,10 @@ Fired when a lead accepts your connection request. This is the same underlying e
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
     },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
+    },
     "connected_at": "2026-03-06T11:30:42.000Z"
   }
 }
@@ -225,13 +521,20 @@ Events triggered as leads progress through campaign workflow steps.
 
 ### workflow.step_completed
 
-Fired each time a lead completes a step in the campaign workflow (e.g., connection request sent, wait period finished, message delivered).
+Fired each time a lead completes a step in the campaign workflow (e.g., connection request sent, message delivered, wait period finished).
 
-### workflow.lead_finished
+**`data` fields:**
 
-Fired when a lead has completed all steps in the workflow and exits the campaign.
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account |
+| `workflow_step` | object | `{ type, action_type }` — the completed step |
 
-<Accordion title="Example workflow event payload">
+**`workflow_step.action_type` values:** `connection_request`, `send_message`, `send_inmail`, `like_post`, `follow`, `endorse_skill`, `view_profile`, `send_email`
+
+<Accordion title="Example payload">
 ```json
 {
   "id": "evt_m3o1q3s5_e5f6g7h8i9j0k1l2",
@@ -246,20 +549,39 @@ Fired when a lead has completed all steps in the workflow and exits the campaign
       "last_name": "Chen",
       "linkedin_url": "https://www.linkedin.com/in/sarachen",
       "company": "Acme Corp",
-      "position": "VP of Engineering"
+      "position": "VP of Engineering",
+      "email": null,
+      "status": "contacted"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
     },
+    "linkedin_account": {
+      "id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
+      "name": "John Sales"
+    },
     "workflow_step": {
-      "type": "send_message",
+      "type": "action",
       "action_type": "send_message"
     }
   }
 }
 ```
 </Accordion>
+
+### workflow.lead_finished
+
+Fired when a lead has completed all steps in the workflow and exits the campaign.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lead` | object | The lead (see [Lead object](#lead-object)) |
+| `campaign` | object | `{ id, name }` — the campaign |
+| `linkedin_account` | object | `{ id, name }` — the LinkedIn account |
+| `final_status` | string | The lead's final workflow status: `completed` |
 
 ---
 
@@ -269,13 +591,17 @@ Events triggered by LinkedIn account status changes. These are critical for main
 
 ### account.disconnected
 
-Fired when a LinkedIn account session becomes invalid. This typically means the account needs to be re-authenticated. **You should pause campaigns using this account when you receive this event.**
+Fired when a LinkedIn account session becomes invalid. All campaigns using this account are automatically paused.
 
-### account.rate_limited
+**`data` fields:**
 
-Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator automatically throttles the account, but this event lets you track rate limit occurrences.
+| Field | Type | Description |
+|-------|------|-------------|
+| `linkedin_account_id` | string | UUID of the disconnected account |
+| `account_name` | string | Display name of the account |
+| `reason` | string | Why the account was disconnected (e.g., `SESSION_KILLED`, `SESSION_EXPIRED`) |
 
-<Accordion title="Example account event payload">
+<Accordion title="Example payload">
 ```json
 {
   "id": "evt_m3p4r6t8_f6g7h8i9j0k1l2m3",
@@ -285,14 +611,58 @@ Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator autom
   "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "data": {
     "linkedin_account_id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
-    "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "account_name": "John Sales",
-    "reason": "Session expired"
+    "reason": "SESSION_KILLED"
   }
 }
 ```
 </Accordion>
 
+### account.rate_limited
+
+Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator automatically throttles the account.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `linkedin_account_id` | string | UUID of the rate-limited account |
+| `account_name` | string | Display name of the account |
+| `limit_type` | string | The action type that was rate-limited (e.g., `connection_request`, `send_message`) |
+
 <Warning>
   Account events should trigger alerts in your system. A disconnected account means all associated campaigns will stop processing leads until the account is reconnected.
 </Warning>
+
+---
+
+## Common Objects
+
+### Lead object
+
+The `lead` object is included in most webhook events and has a consistent structure:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string \| null | UUID of the lead. `null` for contacts not saved as leads (in `message.received`). |
+| `first_name` | string \| null | Lead's first name |
+| `last_name` | string \| null | Lead's last name |
+| `linkedin_url` | string \| null | Full LinkedIn profile URL |
+| `company` | string \| null | Current company |
+| `position` | string \| null | Current job title |
+| `email` | string \| null | Email address (if available) |
+| `status` | string \| null | Current pipeline status |
+
+### LinkedIn Account object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | UUID of the LinkedIn account |
+| `name` | string \| null | Display name of the account |
+
+### Campaign object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | UUID of the campaign |
+| `name` | string \| null | Campaign name |
