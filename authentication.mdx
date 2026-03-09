@@ -50,15 +50,16 @@ API keys are scoped to limit what actions they can perform. Assign only the scop
 
 | Scope | Description |
 |-------|-------------|
-| `read:leads` | List and retrieve lead details |
-| `write:leads` | Create, update, and delete leads |
-| `read:campaigns` | List and retrieve campaign details |
-| `write:campaigns` | Create, update, start, and pause campaigns |
-| `read:conversations` | Read LinkedIn conversation threads and messages |
-| `read:accounts` | List connected LinkedIn accounts and their status |
-| `read:analytics` | Access campaign and account-level analytics |
-| `write:linkedin_actions` | Trigger LinkedIn actions (connection requests, messages, InMails) |
-| `*` | Full access to all endpoints (use with caution) |
+| `read:leads` | Read lead data and lead groups |
+| `write:leads` | Create, update, delete leads, manage tags and groups |
+| `read:campaigns` | Read campaign data and enrolled leads |
+| `write:campaigns` | Start, pause, resume campaigns, enroll/unenroll leads |
+| `read:conversations` | Read conversations and messages |
+| `read:accounts` | Read LinkedIn account information |
+| `read:analytics` | Read analytics and reports |
+| `write:linkedin_actions` | Send connection requests, messages, InMails, view profiles |
+| `webhooks:manage` | Create, update, delete webhooks |
+| `*` | Full access (all scopes) |
 
 <Warning>
   The `*` (wildcard) scope grants unrestricted access. Only use it for trusted, internal integrations. For third-party or client-facing integrations, always use the narrowest scopes possible.
@@ -69,7 +70,7 @@ If a request requires a scope that the API key does not have, the API returns a 
 ```json
 {
   "error": {
-    "message": "Insufficient scope. Required: write:leads",
+    "message": "API key missing required scope: write:leads",
     "code": "INSUFFICIENT_SCOPE"
   }
 }
@@ -94,17 +95,21 @@ Every response includes headers that tell you your current rate limit status:
 
 | Header | Description |
 |--------|-------------|
-| `X-RateLimit-Limit` | Maximum requests allowed in the current window |
-| `X-RateLimit-Remaining` | Requests remaining in the current window |
-| `X-RateLimit-Reset` | Unix timestamp (seconds) when the current window resets |
+| `RateLimit-Limit` | Maximum requests allowed in the current window |
+| `RateLimit-Remaining` | Requests remaining in the current window |
+| `RateLimit-Reset` | Seconds remaining until the current window resets |
 
 Example response headers:
 
 ```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 42
-X-RateLimit-Reset: 1741267200
+RateLimit-Limit: 60
+RateLimit-Remaining: 42
+RateLimit-Reset: 58
 ```
+
+<Note>
+  Cold Navigator uses the [IETF RateLimit header fields](https://datatracker.ietf.org/doc/draft-ietf-httpapi-ratelimit-headers/) standard. Note that `RateLimit-Reset` returns the number of **seconds remaining** in the current window, not a Unix timestamp.
+</Note>
 
 ### Handling rate limits
 
@@ -121,8 +126,8 @@ When you exceed the rate limit, the API returns a `429 Too Many Requests` respon
 
 Best practices for handling rate limits:
 
-- Check `X-RateLimit-Remaining` before making requests
-- Use the `X-RateLimit-Reset` header to schedule retries
+- Check `RateLimit-Remaining` before making requests
+- Use the `RateLimit-Reset` header to schedule retries
 - Implement exponential backoff when you receive a `429` response
 - Cache responses when possible to reduce the number of API calls
 
@@ -134,7 +139,9 @@ The API uses standard HTTP status codes. Here are the authentication and authori
 |--------|------|-------------|
 | `401 Unauthorized` | `INVALID_API_KEY` | The API key is missing, invalid, or has been revoked. |
 | `403 Forbidden` | `INSUFFICIENT_SCOPE` | The API key does not have the required scope for this endpoint. |
-| `429 Too Many Requests` | `RATE_LIMIT_EXCEEDED` | You have exceeded your plan's rate limit. |
+| `403 Forbidden` | `PLAN_UPGRADE_REQUIRED` | API access is not available on the Free plan. |
+| `429 Too Many Requests` | `RATE_LIMIT_EXCEEDED` | You have exceeded your plan's per-minute rate limit. |
+| `429 Too Many Requests` | `DAILY_RATE_LIMIT_EXCEEDED` | You have exceeded your plan's daily rate limit. |
 
 ### 401 — Invalid API key
 
@@ -157,7 +164,7 @@ Common causes:
 ```json
 {
   "error": {
-    "message": "Insufficient scope. Required: write:leads",
+    "message": "API key missing required scope: write:leads",
     "code": "INSUFFICIENT_SCOPE"
   }
 }
@@ -165,7 +172,20 @@ Common causes:
 
 Solution: Create a new API key with the required scope, or update the existing key's permissions from **Settings > API Keys**.
 
-### 429 — Rate limited
+### 403 — Free plan blocked
+
+```json
+{
+  "error": {
+    "message": "API access is not available on the Free plan. Please upgrade to use the API.",
+    "code": "PLAN_UPGRADE_REQUIRED"
+  }
+}
+```
+
+Solution: Upgrade to a paid plan (Free Trial, Single, Team, or Growth) to enable API access.
+
+### 429 — Per-minute rate limit
 
 ```json
 {
@@ -176,7 +196,20 @@ Solution: Create a new API key with the required scope, or update the existing k
 }
 ```
 
-Solution: Wait until the `X-RateLimit-Reset` timestamp, then retry.
+Solution: Wait until the `RateLimit-Reset` countdown reaches 0, then retry.
+
+### 429 — Daily rate limit
+
+```json
+{
+  "error": {
+    "message": "Daily rate limit exceeded. Please try again tomorrow.",
+    "code": "DAILY_RATE_LIMIT_EXCEEDED"
+  }
+}
+```
+
+Solution: You have exhausted your plan's daily quota. Wait until the next day or upgrade to a higher plan.
 
 ## Response format
 

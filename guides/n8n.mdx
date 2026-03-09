@@ -71,6 +71,14 @@ n8n is an open-source workflow automation tool that you can self-host or use as 
     const secret = 'YOUR_WEBHOOK_SECRET';
     const signature = $input.first().headers['x-webhook-signature'];
     const timestamp = $input.first().headers['x-webhook-timestamp'];
+
+    // IMPORTANT: Use the raw body, not JSON.stringify of parsed JSON.
+    // n8n's Webhook node provides the raw body via $input.first().binary.
+    // If you configured the Webhook node with "Raw Body" enabled,
+    // use: const body = $input.first().binary.data.toString();
+    //
+    // If raw body is not available, re-serializing works ONLY if the
+    // original payload had no extra whitespace or special key ordering:
     const body = JSON.stringify($input.first().json);
 
     // Cold Navigator signs: "${timestamp}.${body}"
@@ -86,6 +94,10 @@ n8n is an open-source workflow automation tool that you can self-host or use as 
 
     return $input.all();
     ```
+
+    <Warning>
+      Signature verification compares against the **raw HTTP body**. If your framework parses and re-serializes JSON, the output may differ from the original (e.g., key ordering, whitespace). When possible, use the raw body string. Cold Navigator sends compact JSON with no extra whitespace, so `JSON.stringify()` of the parsed object typically matches, but using raw body is the safest approach.
+    </Warning>
 
     <Tip>
       HMAC verification is strongly recommended for production deployments. It prevents attackers from sending fake events to your n8n webhook URL.
@@ -161,13 +173,19 @@ Here is what Cold Navigator sends when a lead replies:
       "id": "f7e6d5c4-b3a2-1098-7654-321fedcba098",
       "first_name": "Sarah",
       "last_name": "Johnson",
+      "email": "sarah.johnson@acme.com",
       "company": "Acme Corp",
       "position": "VP of Sales",
-      "linkedin_url": "https://www.linkedin.com/in/sarahjohnson"
+      "linkedin_url": "https://www.linkedin.com/in/sarahjohnson",
+      "status": "contacted"
     },
     "campaign": {
       "id": "c9d8e7f6-5432-1abc-def0-987654321abc",
       "name": "Q1 Enterprise Outreach"
+    },
+    "linkedin_account": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-111111111111",
+      "name": "John Doe"
     },
     "message": {
       "text": "Hi, thanks for reaching out! I'd love to learn more about your product."

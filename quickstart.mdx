@@ -133,14 +133,24 @@ Follow these steps to make your first API call, create a lead, and set up a webh
         "first_name": "Jane",
         "last_name": "Smith",
         "linkedin_url": "https://www.linkedin.com/in/janesmith",
+        "headline": null,
+        "email": null,
+        "phone": null,
         "company": "Acme Corp",
         "position": "VP of Sales",
+        "location": null,
         "status": "new",
-        "created_at": "2026-03-06T10:30:00Z"
+        "custom_fields": null,
+        "created_at": "2026-03-06T10:30:00Z",
+        "updated_at": "2026-03-06T10:30:00Z"
       },
       "message": "Lead created"
     }
     ```
+
+    <Note>
+      If a lead with the same `linkedin_url` already exists in your workspace, the API returns `200` with message "Lead already exists, added to group" instead of creating a duplicate.
+    </Note>
   </Step>
 
   <Step title="Set up a webhook">
@@ -157,7 +167,7 @@ Follow these steps to make your first API call, create a lead, and set up a webh
       Save the **secret key** shown after creation. You will need it to verify that incoming webhook payloads are genuinely from Cold Navigator. See [Signature Verification](/webhooks/signature-verification) for details.
     </Warning>
 
-    Once created, click the **Test** button next to your webhook. Your endpoint will receive a test payload like:
+    Once created, click the **Test** button next to your webhook. If you select a specific event type to test (e.g., `lead.replied`), the test payload will match that event's schema with sample data. If you test without selecting an event type, your endpoint will receive a generic test payload:
 
     ```json
     {
@@ -167,16 +177,41 @@ Follow these steps to make your first API call, create a lead, and set up a webh
       "api_version": "2026-03-01",
       "data": {
         "message": "This is a test webhook delivery from Cold Navigator",
+        "webhook_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "timestamp": "2026-03-06T10:36:00Z"
+      }
+    }
+    ```
+
+    For example, testing with `lead.replied` sends:
+
+    ```json
+    {
+      "id": "evt_test_abc123",
+      "event": "lead.replied",
+      "created_at": "2026-03-06T10:36:00Z",
+      "api_version": "2026-03-01",
+      "data": {
         "lead": {
-          "id": "00000000-0000-0000-0000-000000000000",
-          "first_name": "Test",
-          "last_name": "Lead",
-          "company": "Test Company",
-          "position": "CEO",
-          "email": "test@example.com",
+          "id": "00000000-0000-0000-0000-000000000001",
+          "first_name": "Jane",
+          "last_name": "Smith",
+          "company": "Acme Corp",
+          "position": "VP of Sales",
+          "email": "jane@acme.com",
           "status": "new"
         },
-        "source": "test"
+        "campaign": {
+          "id": "00000000-0000-0000-0000-000000000002",
+          "name": "Q1 Outreach"
+        },
+        "linkedin_account": {
+          "id": "00000000-0000-0000-0000-000000000003",
+          "name": "John Doe"
+        },
+        "message": {
+          "text": "Hi, thanks for reaching out! I would love to learn more."
+        }
       }
     }
     ```

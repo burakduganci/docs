@@ -29,6 +29,7 @@ Cold Navigator supports webhook event types organized into 6 categories. When cr
 | | `workflow.lead_finished` | A lead finished the entire workflow |
 | **Account** | `account.disconnected` | A LinkedIn account lost its session |
 | | `account.rate_limited` | A LinkedIn account hit rate limits |
+| **System** | `webhook.test` | A test delivery sent from the webhook settings |
 
 ---
 
@@ -599,7 +600,7 @@ Fired when a LinkedIn account session becomes invalid. All campaigns using this 
 |-------|------|-------------|
 | `linkedin_account_id` | string | UUID of the disconnected account |
 | `account_name` | string | Display name of the account |
-| `reason` | string | Why the account was disconnected (e.g., `SESSION_KILLED`, `SESSION_EXPIRED`) |
+| `reason` | string | Why the account was disconnected (e.g., `session_expired`, `session_killed`) |
 
 <Accordion title="Example payload">
 ```json
@@ -612,7 +613,7 @@ Fired when a LinkedIn account session becomes invalid. All campaigns using this 
   "data": {
     "linkedin_account_id": "d5e6f7a8-b9c0-1234-5678-9abcdef01234",
     "account_name": "John Sales",
-    "reason": "SESSION_KILLED"
+    "reason": "session_expired"
   }
 }
 ```
@@ -636,6 +637,43 @@ Fired when a LinkedIn account hits LinkedIn's usage limits. Cold Navigator autom
 
 ---
 
+## System Events
+
+### webhook.test
+
+Sent when you click the **Test** button in the webhook settings. This event is always delivered regardless of your event subscriptions and uses sample data — never real lead or campaign information.
+
+**`data` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `message` | string | Always `"This is a test webhook delivery from Cold Navigator"` |
+| `webhook_id` | string | UUID of the webhook being tested |
+| `timestamp` | string | ISO 8601 timestamp of the test |
+
+<Note>
+  When you test with a specific event type selected (e.g., `lead.replied`), the test payload uses that event's schema with sample data instead of the generic `webhook.test` format.
+</Note>
+
+<Accordion title="Example payload">
+```json
+{
+  "id": "evt_test_abc123def456",
+  "event": "webhook.test",
+  "created_at": "2026-03-06T10:36:00Z",
+  "api_version": "2026-03-01",
+  "workspace_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "data": {
+    "message": "This is a test webhook delivery from Cold Navigator",
+    "webhook_id": "e5f6a7b8-c9d0-1234-5678-abcdef012345",
+    "timestamp": "2026-03-06T10:36:00Z"
+  }
+}
+```
+</Accordion>
+
+---
+
 ## Common Objects
 
 ### Lead object
@@ -651,7 +689,7 @@ The `lead` object is included in most webhook events and has a consistent struct
 | `company` | string \| null | Current company |
 | `position` | string \| null | Current job title |
 | `email` | string \| null | Email address (if available) |
-| `status` | string \| null | Current pipeline status |
+| `status` | string \| null | Current pipeline status: `new`, `contacted`, `engaged`, `qualified`, `converted`, `unqualified`, `lost`, `replied`, `connected`, `do_not_contact` |
 
 ### LinkedIn Account object
 
