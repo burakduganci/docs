@@ -28,13 +28,10 @@ info:
 
     ## Base URL
     - Production: `https://app.coldnavigator.com/api/v1`
-    - Development: `https://dev.coldnavigator.com/api/v1`
 
 servers:
   - url: https://app.coldnavigator.com/api/v1
     description: Production
-  - url: https://dev.coldnavigator.com/api/v1
-    description: Development
 
 security:
   - apiKey: []
@@ -315,6 +312,177 @@ components:
           nullable: true
           example: '2026-03-06T09:12:33Z'
 
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        linkedin_account_id:
+          type: string
+          format: uuid
+        campaign_id:
+          type: string
+          format: uuid
+          nullable: true
+        lead_id:
+          type: string
+          format: uuid
+          nullable: true
+        participant_name:
+          type: string
+          example: Jane Smith
+        participant_profile_url:
+          type: string
+          format: uri
+          example: https://www.linkedin.com/in/janesmith
+        participant_photo_url:
+          type: string
+          format: uri
+          nullable: true
+        participant_headline:
+          type: string
+          nullable: true
+          example: VP of Sales at Acme Corp
+        last_message_text:
+          type: string
+          nullable: true
+          example: Thanks for connecting! I'd love to chat.
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-03-06T14:23:00Z'
+        last_message_sender:
+          type: string
+          enum: [participant, account, system]
+          nullable: true
+          example: participant
+        is_unread:
+          type: boolean
+          example: true
+        message_type:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        linkedin_account:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            full_name:
+              type: string
+            profile_photo_url:
+              type: string
+              format: uri
+              nullable: true
+        lead:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            first_name:
+              type: string
+            last_name:
+              type: string
+            headline:
+              type: string
+              nullable: true
+            company:
+              type: string
+              nullable: true
+            position:
+              type: string
+              nullable: true
+            linkedin_url:
+              type: string
+              format: uri
+
+    AnalyticsOverview:
+      type: object
+      properties:
+        period:
+          type: string
+          enum: ['7d', '30d', '90d']
+          example: '30d'
+        totals:
+          type: object
+          properties:
+            connections_sent:
+              type: integer
+              example: 500
+            connections_accepted:
+              type: integer
+              example: 180
+            messages_sent:
+              type: integer
+              example: 320
+            replies_received:
+              type: integer
+              example: 95
+            profiles_viewed:
+              type: integer
+              example: 750
+            acceptance_rate:
+              type: number
+              description: Percentage (0-100)
+              example: 36.0
+            reply_rate:
+              type: number
+              description: Percentage (0-100)
+              example: 29.7
+        total_leads:
+          type: integer
+          example: 1250
+        active_campaigns:
+          type: integer
+          example: 4
+
+    CampaignAnalytics:
+      type: object
+      properties:
+        campaign_id:
+          type: string
+          format: uuid
+        connections_sent:
+          type: integer
+          example: 200
+        connections_accepted:
+          type: integer
+          example: 67
+        messages_sent:
+          type: integer
+          example: 120
+        replies_received:
+          type: integer
+          example: 38
+        profiles_viewed:
+          type: integer
+          example: 250
+        acceptance_rate:
+          type: number
+          description: Percentage (0-100)
+          example: 33.5
+        reply_rate:
+          type: number
+          description: Percentage (0-100)
+          example: 31.7
+        status:
+          type: string
+          enum: [draft, active, paused, completed, archived]
+          nullable: true
+
     SuccessResponse:
       type: object
       properties:
@@ -553,6 +721,10 @@ paths:
                     example: Lead created
         '400':
           description: Validation error (missing required fields, invalid LinkedIn URL format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /public/leads/batch:
     post:
@@ -1024,6 +1196,10 @@ paths:
                     example: Campaign started
         '400':
           description: Campaign cannot be started (no lead groups, no workflow, already active/completed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /public/campaigns/{id}/pause:
     post:
@@ -1208,6 +1384,13 @@ paths:
       responses:
         '202':
           description: Profile view queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AsyncJob'
 
   /public/linkedin/job/{job_id}:
     get:
@@ -1271,6 +1454,30 @@ paths:
       responses:
         '200':
           description: Conversation list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      conversations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Conversation'
+                      total:
+                        type: integer
+                        example: 87
+                      limit:
+                        type: integer
+                        example: 50
+                      offset:
+                        type: integer
+                        example: 0
+                  message:
+                    type: string
+                    example: Success
 
   # ============ LEAD GROUPS ============
   /public/lead-groups:
@@ -1319,6 +1526,16 @@ paths:
       responses:
         '201':
           description: Lead group created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LeadGroup'
+                  message:
+                    type: string
+                    example: Lead group created
 
   /public/lead-groups/{id}/leads:
     post:
@@ -1351,6 +1568,21 @@ paths:
       responses:
         '200':
           description: Leads added to group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      added:
+                        type: integer
+                        description: Number of leads added to the group
+                        example: 3
+                  message:
+                    type: string
+                    example: Success
     delete:
       operationId: removeLeadsFromGroup
       summary: Remove leads from group
@@ -1381,6 +1613,32 @@ paths:
       responses:
         '200':
           description: Leads removed from group
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      removed:
+                        type: integer
+                        description: Number of leads removed from the group
+                        example: 2
+                      errors:
+                        type: array
+                        description: Per-lead error details (only present if there were errors)
+                        items:
+                          type: object
+                          properties:
+                            lead_id:
+                              type: string
+                              format: uuid
+                            error:
+                              type: string
+                  message:
+                    type: string
+                    example: Success
 
   # ============ LINKEDIN ACCOUNTS ============
   /public/linkedin-accounts:
@@ -1458,6 +1716,16 @@ paths:
       responses:
         '200':
           description: Analytics overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AnalyticsOverview'
+                  message:
+                    type: string
+                    example: Success
 
   /public/analytics/campaigns/{id}:
     get:
@@ -1476,3 +1744,15 @@ paths:
       responses:
         '200':
           description: Campaign analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CampaignAnalytics'
+                  message:
+                    type: string
+                    example: Success
+        '404':
+          description: Campaign not found
